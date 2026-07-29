@@ -96,7 +96,10 @@ mod tests {
             .unwrap()
     }
     fn req() -> ChatRequest {
-        ChatRequest { system: "SYS".into(), user: "USR".into() }
+        ChatRequest {
+            system: "SYS".into(),
+            user: "USR".into(),
+        }
     }
 
     #[test]
@@ -118,7 +121,10 @@ mod tests {
             .iter()
             .any(|(k, v)| k.eq_ignore_ascii_case("anthropic-version") && v == "2023-06-01"));
         // The API key must never travel as a bearer token.
-        assert!(!r.headers.iter().any(|(k, _)| k.eq_ignore_ascii_case("authorization")));
+        assert!(!r
+            .headers
+            .iter()
+            .any(|(k, _)| k.eq_ignore_ascii_case("authorization")));
         let sent: serde_json::Value = serde_json::from_slice(r.body.as_deref().unwrap()).unwrap();
         assert_eq!(sent["model"], "claude-haiku-4-5");
         assert_eq!(sent["max_tokens"], 4096);
@@ -146,7 +152,9 @@ mod tests {
         );
         let ctx = Context::new(&host, "/w".into(), "s".into());
         match AnthropicClient::new(&cfg()).complete(&ctx, &req()) {
-            Err(ChatError::RateLimited { retry_after_ms }) => assert_eq!(retry_after_ms, Some(2000)),
+            Err(ChatError::RateLimited { retry_after_ms }) => {
+                assert_eq!(retry_after_ms, Some(2000))
+            }
             other => panic!("expected RateLimited, got {other:?}"),
         }
     }

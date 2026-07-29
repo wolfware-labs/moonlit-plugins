@@ -39,7 +39,10 @@ struct OaMessage {
 
 impl ChatClient for OpenAiClient {
     fn complete(&self, ctx: &Context, req: &ChatRequest) -> Result<ChatResponse, ChatError> {
-        let url = format!("{}/v1/chat/completions", self.base_url.trim_end_matches('/'));
+        let url = format!(
+            "{}/v1/chat/completions",
+            self.base_url.trim_end_matches('/')
+        );
         let payload = serde_json::json!({
             "model": self.model,
             "messages": [
@@ -87,7 +90,10 @@ impl ChatClient for OpenAiClient {
 /// Strip a leading ```/```json fence and a trailing ``` fence, if present.
 pub fn strip_fences(s: &str) -> String {
     let t = s.trim();
-    let t = t.strip_prefix("```json").or_else(|| t.strip_prefix("```")).unwrap_or(t);
+    let t = t
+        .strip_prefix("```json")
+        .or_else(|| t.strip_prefix("```"))
+        .unwrap_or(t);
     let t = t.strip_suffix("```").unwrap_or(t);
     t.trim().to_string()
 }
@@ -109,7 +115,12 @@ mod tests {
     fn cfg() -> AiConfig {
         moonlit_sdk::config::from_json_value(r#"{"apiKey":"sk-test"}"#).unwrap()
     }
-    fn req() -> ChatRequest { ChatRequest { system: "SYS".into(), user: "USR".into() } }
+    fn req() -> ChatRequest {
+        ChatRequest {
+            system: "SYS".into(),
+            user: "USR".into(),
+        }
+    }
 
     #[test]
     fn success_sends_canonical_request_and_strips_fences() {
@@ -121,7 +132,10 @@ mod tests {
         let r = &host.recorded_requests()[0];
         assert_eq!(r.authority, "api.openai.com");
         assert_eq!(r.path_with_query, "/v1/chat/completions");
-        assert!(r.headers.iter().any(|(k, v)| k.eq_ignore_ascii_case("authorization") && v == "Bearer sk-test"));
+        assert!(r
+            .headers
+            .iter()
+            .any(|(k, v)| k.eq_ignore_ascii_case("authorization") && v == "Bearer sk-test"));
         let sent: serde_json::Value = serde_json::from_slice(r.body.as_deref().unwrap()).unwrap();
         assert_eq!(sent["model"], "gpt-5-mini");
         assert_eq!(sent["messages"][0]["role"], "developer");
@@ -134,16 +148,24 @@ mod tests {
     fn http_401_maps_to_auth() {
         let host = MockHost::new().with_http_response(401, b"nope");
         let ctx = Context::new(&host, "/w".into(), "s".into());
-        assert!(matches!(OpenAiClient::new(&cfg()).complete(&ctx, &req()), Err(ChatError::Auth(_))));
+        assert!(matches!(
+            OpenAiClient::new(&cfg()).complete(&ctx, &req()),
+            Err(ChatError::Auth(_))
+        ));
     }
 
     #[test]
     fn http_429_parses_retry_after_seconds() {
         let host = MockHost::new().with_http_response_headers(
-            429, vec![("retry-after".into(), "2".into())], b"slow down");
+            429,
+            vec![("retry-after".into(), "2".into())],
+            b"slow down",
+        );
         let ctx = Context::new(&host, "/w".into(), "s".into());
         match OpenAiClient::new(&cfg()).complete(&ctx, &req()) {
-            Err(ChatError::RateLimited { retry_after_ms }) => assert_eq!(retry_after_ms, Some(2000)),
+            Err(ChatError::RateLimited { retry_after_ms }) => {
+                assert_eq!(retry_after_ms, Some(2000))
+            }
             other => panic!("expected RateLimited, got {other:?}"),
         }
     }
@@ -152,13 +174,19 @@ mod tests {
     fn empty_content_is_malformed() {
         let host = MockHost::new().with_http_response(200, br#"{"choices":[]}"#);
         let ctx = Context::new(&host, "/w".into(), "s".into());
-        assert!(matches!(OpenAiClient::new(&cfg()).complete(&ctx, &req()), Err(ChatError::Malformed(_))));
+        assert!(matches!(
+            OpenAiClient::new(&cfg()).complete(&ctx, &req()),
+            Err(ChatError::Malformed(_))
+        ));
     }
 
     #[test]
     fn http_500_maps_to_transport() {
         let host = MockHost::new().with_http_response(500, b"boom");
         let ctx = Context::new(&host, "/w".into(), "s".into());
-        assert!(matches!(OpenAiClient::new(&cfg()).complete(&ctx, &req()), Err(ChatError::Transport(_))));
+        assert!(matches!(
+            OpenAiClient::new(&cfg()).complete(&ctx, &req()),
+            Err(ChatError::Transport(_))
+        ));
     }
 }

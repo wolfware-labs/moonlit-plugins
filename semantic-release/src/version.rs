@@ -332,10 +332,9 @@ mod tests {
 
     #[test]
     fn explicit_empty_rules_are_honored() {
-        let cfg: AnalyzerConfig = moonlit_sdk::config::from_json_value(
-            &serde_json::json!({ "rules": [] }).to_string(),
-        )
-        .unwrap();
+        let cfg: AnalyzerConfig =
+            moonlit_sdk::config::from_json_value(&serde_json::json!({ "rules": [] }).to_string())
+                .unwrap();
         assert_eq!(cfg.analyze(&[c("feat", false)]), VersionBumpType::None);
     }
 }

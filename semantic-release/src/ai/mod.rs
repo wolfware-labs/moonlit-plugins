@@ -130,7 +130,8 @@ impl ChatClient for Retrying {
                     if attempt >= self.max_retries {
                         return Err(e);
                     }
-                    ctx.clock().sleep_ms(backoff_ms(attempt, retry_after_of(&e)));
+                    ctx.clock()
+                        .sleep_ms(backoff_ms(attempt, retry_after_of(&e)));
                     attempt += 1;
                 }
             }
@@ -162,25 +163,35 @@ mod tests {
     }
     impl FakeClient {
         fn new(results: Vec<Result<ChatResponse, ChatError>>) -> Self {
-            Self { results: RefCell::new(results), calls: RefCell::new(0) }
+            Self {
+                results: RefCell::new(results),
+                calls: RefCell::new(0),
+            }
         }
     }
     impl ChatClient for FakeClient {
         fn complete(&self, _ctx: &Context, _req: &ChatRequest) -> Result<ChatResponse, ChatError> {
             *self.calls.borrow_mut() += 1;
             let mut r = self.results.borrow_mut();
-            if r.is_empty() { return Err(ChatError::Transport("exhausted".into())); }
+            if r.is_empty() {
+                return Err(ChatError::Transport("exhausted".into()));
+            }
             r.remove(0)
         }
     }
-    fn req() -> ChatRequest { ChatRequest { system: "s".into(), user: "u".into() } }
+    fn req() -> ChatRequest {
+        ChatRequest {
+            system: "s".into(),
+            user: "u".into(),
+        }
+    }
 
     #[test]
     fn backoff_uses_retry_after_then_exponential() {
         assert_eq!(backoff_ms(0, None), 500);
         assert_eq!(backoff_ms(1, None), 1000);
         assert_eq!(backoff_ms(4, None), 8000);
-        assert_eq!(backoff_ms(0, Some(1000)), 1000);   // honor server hint
+        assert_eq!(backoff_ms(0, Some(1000)), 1000); // honor server hint
         assert_eq!(backoff_ms(3, Some(90_000)), 60_000); // capped
     }
 
@@ -188,7 +199,12 @@ mod tests {
     fn success_passes_through_without_sleep() {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/w".into(), "s".into());
-        let r = Retrying::new(Box::new(FakeClient::new(vec![Ok(ChatResponse { text: "ok".into() })])), 5);
+        let r = Retrying::new(
+            Box::new(FakeClient::new(vec![Ok(ChatResponse {
+                text: "ok".into(),
+            })])),
+            5,
+        );
         assert_eq!(r.complete(&ctx, &req()).unwrap().text, "ok");
         assert!(host.recorded_sleeps().is_empty());
     }
@@ -208,8 +224,12 @@ mod tests {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/w".into(), "s".into());
         let fake = Box::new(FakeClient::new(vec![
-            Err(ChatError::RateLimited { retry_after_ms: Some(1000) }),
-            Ok(ChatResponse { text: "done".into() }),
+            Err(ChatError::RateLimited {
+                retry_after_ms: Some(1000),
+            }),
+            Ok(ChatResponse {
+                text: "done".into(),
+            }),
         ]));
         let r = Retrying::new(fake, 5);
         assert_eq!(r.complete(&ctx, &req()).unwrap().text, "done");
@@ -221,18 +241,41 @@ mod tests {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/w".into(), "s".into());
         let fake = Box::new(FakeClient::new(vec![
-            Err(ChatError::RateLimited { retry_after_ms: None }), // attempt 0
-            Err(ChatError::RateLimited { retry_after_ms: None }), // 1
-            Err(ChatError::RateLimited { retry_after_ms: None }), // 2
-            Err(ChatError::RateLimited { retry_after_ms: None }), // 3
-            Err(ChatError::RateLimited { retry_after_ms: None }), // 4
-            Err(ChatError::RateLimited { retry_after_ms: None }), // 5 (== max_retries) -> return Err
+            Err(ChatError::RateLimited {
+                retry_after_ms: None,
+            }), // attempt 0
+            Err(ChatError::RateLimited {
+                retry_after_ms: None,
+            }), // 1
+            Err(ChatError::RateLimited {
+                retry_after_ms: None,
+            }), // 2
+            Err(ChatError::RateLimited {
+                retry_after_ms: None,
+            }), // 3
+            Err(ChatError::RateLimited {
+                retry_after_ms: None,
+            }), // 4
+            Err(ChatError::RateLimited {
+                retry_after_ms: None,
+            }), // 5 (== max_retries) -> return Err
         ]));
         let r = Retrying::new(fake, 5);
-        assert!(matches!(r.complete(&ctx, &req()), Err(ChatError::RateLimited { .. })));
+        assert!(matches!(
+            r.complete(&ctx, &req()),
+            Err(ChatError::RateLimited { .. })
+        ));
         // 5 sleeps between the 6 attempts, exponential in ms -> nanos.
-        assert_eq!(host.recorded_sleeps(),
-            vec![500_000_000, 1_000_000_000, 2_000_000_000, 4_000_000_000, 8_000_000_000]);
+        assert_eq!(
+            host.recorded_sleeps(),
+            vec![
+                500_000_000,
+                1_000_000_000,
+                2_000_000_000,
+                4_000_000_000,
+                8_000_000_000
+            ]
+        );
     }
 
     #[test]
@@ -240,11 +283,22 @@ mod tests {
         // 429 (retry-after 1s) then 200 -> factory-built client retries and succeeds.
         let host = MockHost::new()
             .with_http_response_headers(429, vec![("retry-after".into(), "1".into())], b"slow")
-            .with_http_response(200, br#"{"choices":[{"message":{"content":"{\"ok\":true}"}}]}"#);
+            .with_http_response(
+                200,
+                br#"{"choices":[{"message":{"content":"{\"ok\":true}"}}]}"#,
+            );
         let ctx = Context::new(&host, "/w".into(), "s".into());
         let cfg: AiConfig = from_json_value(r#"{"apiKey":"sk"}"#).unwrap();
         let client = build_client(&cfg);
-        let out = client.complete(&ctx, &ChatRequest { system: "s".into(), user: "u".into() }).unwrap();
+        let out = client
+            .complete(
+                &ctx,
+                &ChatRequest {
+                    system: "s".into(),
+                    user: "u".into(),
+                },
+            )
+            .unwrap();
         assert_eq!(out.text, "{\"ok\":true}");
         assert_eq!(host.recorded_sleeps(), vec![1_000_000_000]); // retried once; 1000ms=1e9 nanos
     }
@@ -261,7 +315,8 @@ mod tests {
 
     #[test]
     fn ai_config_explicit_model_wins() {
-        let c: AiConfig = from_json_value(r#"{"apiKey":"k","model":"gpt-4o","maxRetries":2}"#).unwrap();
+        let c: AiConfig =
+            from_json_value(r#"{"apiKey":"k","model":"gpt-4o","maxRetries":2}"#).unwrap();
         assert_eq!(c.model_or_default(), "gpt-4o");
         assert_eq!(c.max_retries, 2);
     }

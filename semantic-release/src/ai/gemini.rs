@@ -99,16 +99,19 @@ mod tests {
     use moonlit_sdk::testing::MockHost;
 
     fn cfg() -> AiConfig {
-        moonlit_sdk::config::from_json_value(r#"{"provider":"gemini","apiKey":"gk-test"}"#)
-            .unwrap()
+        moonlit_sdk::config::from_json_value(r#"{"provider":"gemini","apiKey":"gk-test"}"#).unwrap()
     }
     fn req() -> ChatRequest {
-        ChatRequest { system: "SYS".into(), user: "USR".into() }
+        ChatRequest {
+            system: "SYS".into(),
+            user: "USR".into(),
+        }
     }
 
     #[test]
     fn success_sends_canonical_request_and_strips_fences() {
-        let body = br#"{"candidates":[{"content":{"parts":[{"text":"```json\n{\"a\":1}\n```"}]}}]}"#;
+        let body =
+            br#"{"candidates":[{"content":{"parts":[{"text":"```json\n{\"a\":1}\n```"}]}}]}"#;
         let host = MockHost::new().with_http_response(200, body);
         let ctx = Context::new(&host, "/w".into(), "s".into());
         let out = GeminiClient::new(&cfg()).complete(&ctx, &req()).unwrap();
@@ -116,7 +119,10 @@ mod tests {
         let r = &host.recorded_requests()[0];
         assert_eq!(r.authority, "generativelanguage.googleapis.com");
         // Model is in the path; the API key is a header, not a query param.
-        assert_eq!(r.path_with_query, "/v1beta/models/gemini-2.5-flash:generateContent");
+        assert_eq!(
+            r.path_with_query,
+            "/v1beta/models/gemini-2.5-flash:generateContent"
+        );
         assert!(r
             .headers
             .iter()
@@ -125,7 +131,10 @@ mod tests {
         assert_eq!(sent["system_instruction"]["parts"][0]["text"], "SYS");
         assert_eq!(sent["contents"][0]["role"], "user");
         assert_eq!(sent["contents"][0]["parts"][0]["text"], "USR");
-        assert_eq!(sent["generationConfig"]["responseMimeType"], "application/json");
+        assert_eq!(
+            sent["generationConfig"]["responseMimeType"],
+            "application/json"
+        );
     }
 
     #[test]
@@ -147,7 +156,9 @@ mod tests {
         );
         let ctx = Context::new(&host, "/w".into(), "s".into());
         match GeminiClient::new(&cfg()).complete(&ctx, &req()) {
-            Err(ChatError::RateLimited { retry_after_ms }) => assert_eq!(retry_after_ms, Some(2000)),
+            Err(ChatError::RateLimited { retry_after_ms }) => {
+                assert_eq!(retry_after_ms, Some(2000))
+            }
             other => panic!("expected RateLimited, got {other:?}"),
         }
     }
