@@ -19,3 +19,5 @@ regex = "1"
 
 [dev-dependencies]
 tempfile = "3"
+moonlit-engine = { git = "https://github.com/wolfware-labs/moonlit", rev = "db48c373f6f73a30378219a94eb7174f66cc99a6" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
