@@ -94,7 +94,10 @@ mod tests {
     fn ai_flag_without_config_fails() {
         let shared = SrShared::default();
         shared.commits.set(vec![crate::models::ConventionalCommit {
-            kind: "feat".into(), summary: "add flag".into(), sha: "abc1234".into(), ..Default::default()
+            kind: "feat".into(),
+            summary: "add flag".into(),
+            sha: "abc1234".into(),
+            ..Default::default()
         }]);
         let host = MockHost::new();
         let pc = sr_cfg(serde_json::json!({})); // no ai block
@@ -111,18 +114,33 @@ mod tests {
     fn filter_flag_drops_non_user_facing_then_builds_categories() {
         let shared = SrShared::default();
         shared.commits.set(vec![
-            crate::models::ConventionalCommit { kind: "feat".into(), summary: "add flag".into(), sha: "a".into(), ..Default::default() },
-            crate::models::ConventionalCommit { kind: "chore".into(), summary: "bump".into(), sha: "b".into(), ..Default::default() },
+            crate::models::ConventionalCommit {
+                kind: "feat".into(),
+                summary: "add flag".into(),
+                sha: "a".into(),
+                ..Default::default()
+            },
+            crate::models::ConventionalCommit {
+                kind: "chore".into(),
+                summary: "bump".into(),
+                sha: "b".into(),
+                ..Default::default()
+            },
         ]);
         // OpenAI 200: drop index 1 (the chore).
-        let host = MockHost::new()
-            .with_http_response(200, br#"{"choices":[{"message":{"content":"{\"drop\":[1]}"}}]}"#);
+        let host = MockHost::new().with_http_response(
+            200,
+            br#"{"choices":[{"message":{"content":"{\"drop\":[1]}"}}]}"#,
+        );
         let pc = sr_cfg(serde_json::json!({ "ai": { "apiKey": "sk-x" } }));
         let c = cfg(serde_json::json!({ "filterNonUserFacingCommits": true }));
         let w = run_with_config(&shared, &host, &pc, c);
         assert!(w.successful);
-        let out: std::collections::HashMap<String, Value> = w.output.into_iter()
-            .map(|(k, v)| (k, serde_json::from_str(&v).unwrap())).collect();
+        let out: std::collections::HashMap<String, Value> = w
+            .output
+            .into_iter()
+            .map(|(k, v)| (k, serde_json::from_str(&v).unwrap()))
+            .collect();
         let cats = out["categories"].as_array().unwrap();
         // Only the feat survived -> single "Features" category.
         assert_eq!(cats.len(), 1);
@@ -133,7 +151,10 @@ mod tests {
     fn refine_flag_rewrites_summaries() {
         let shared = SrShared::default();
         shared.commits.set(vec![crate::models::ConventionalCommit {
-            kind: "feat".into(), summary: "add flag".into(), sha: "a".into(), ..Default::default()
+            kind: "feat".into(),
+            summary: "add flag".into(),
+            sha: "a".into(),
+            ..Default::default()
         }]);
         let host = MockHost::new().with_http_response(
             200, br#"{"choices":[{"message":{"content":"{\"summaries\":[{\"index\":0,\"summary\":\"Add the flag\"}]}"}}]}"#);
@@ -141,9 +162,15 @@ mod tests {
         let c = cfg(serde_json::json!({ "refineCommitsSummary": true }));
         let w = run_with_config(&shared, &host, &pc, c);
         assert!(w.successful);
-        let out: std::collections::HashMap<String, Value> = w.output.into_iter()
-            .map(|(k, v)| (k, serde_json::from_str(&v).unwrap())).collect();
-        assert_eq!(out["categories"][0]["entries"][0]["description"], "Add the flag");
+        let out: std::collections::HashMap<String, Value> = w
+            .output
+            .into_iter()
+            .map(|(k, v)| (k, serde_json::from_str(&v).unwrap()))
+            .collect();
+        assert_eq!(
+            out["categories"][0]["entries"][0]["description"],
+            "Add the flag"
+        );
     }
 
     #[test]

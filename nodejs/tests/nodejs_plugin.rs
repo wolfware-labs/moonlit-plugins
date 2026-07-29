@@ -60,12 +60,11 @@ async fn run_script_missing_package_json_fails() {
         .await
         .unwrap();
     assert!(!r.successful);
-    assert!(
-        r.error_message
-            .as_deref()
-            .unwrap()
-            .starts_with("package.json not found in directory:")
-    );
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("package.json not found in directory:"));
 }
 
 #[tokio::test]
@@ -81,12 +80,11 @@ async fn build_missing_package_json_fails() {
         .await
         .unwrap();
     assert!(!r.successful);
-    assert!(
-        r.error_message
-            .as_deref()
-            .unwrap()
-            .starts_with("package.json not found in directory:")
-    );
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("package.json not found in directory:"));
 }
 
 #[tokio::test]
@@ -102,10 +100,9 @@ async fn push_missing_tarball_fails() {
         .await
         .unwrap();
     assert!(!r.successful);
-    assert!(
-        r.error_message
-            .as_deref()
-            .unwrap()
-            .starts_with("Package tarball not found at path:")
-    );
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("Package tarball not found at path:"));
 }

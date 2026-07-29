@@ -36,7 +36,9 @@ pub fn batch_items_json(batch: &[ConventionalCommit]) -> String {
 pub fn err_to_string(e: ChatError) -> String {
     match e {
         ChatError::Auth(m) => m,
-        ChatError::RateLimited { .. } => "OpenAI request failed: rate limited after retries.".into(),
+        ChatError::RateLimited { .. } => {
+            "OpenAI request failed: rate limited after retries.".into()
+        }
         ChatError::Transport(m) => format!("OpenAI request failed: {m}."),
         ChatError::Malformed(m) => format!("OpenAI returned an unparseable response: {m}."),
     }
@@ -118,7 +120,10 @@ pub fn refine_summaries(
             .map_err(|e| format!("OpenAI returned an unparseable response: {e}."))?;
         for item in reply.summaries {
             if item.index >= batch_len {
-                return Err(format!("OpenAI returned an out-of-range index {}.", item.index));
+                return Err(format!(
+                    "OpenAI returned an out-of-range index {}.",
+                    item.index
+                ));
             }
             out[start + item.index].summary = item.summary;
         }
@@ -154,15 +159,26 @@ mod tests {
         }
     }
     fn commit(kind: &str, summary: &str) -> ConventionalCommit {
-        ConventionalCommit { kind: kind.into(), summary: summary.into(), sha: "abc1234".into(), ..Default::default() }
+        ConventionalCommit {
+            kind: kind.into(),
+            summary: summary.into(),
+            sha: "abc1234".into(),
+            ..Default::default()
+        }
     }
-    fn ctx<'a>(h: &'a MockHost) -> Context<'a> { Context::new(h, "/w".into(), "s".into()) }
+    fn ctx<'a>(h: &'a MockHost) -> Context<'a> {
+        Context::new(h, "/w".into(), "s".into())
+    }
 
     #[test]
     fn filter_drops_flagged_indices() {
         let host = MockHost::new();
         let client = Canned::new(vec![r#"{"drop":[1]}"#]);
-        let commits = vec![commit("feat", "add x"), commit("chore", "bump deps"), commit("fix", "y")];
+        let commits = vec![
+            commit("feat", "add x"),
+            commit("chore", "bump deps"),
+            commit("fix", "y"),
+        ];
         let out = filter_commits(&ctx(&host), &client, commits).unwrap();
         let kinds: Vec<_> = out.iter().map(|c| c.kind.as_str()).collect();
         assert_eq!(kinds, vec!["feat", "fix"]);
@@ -197,7 +213,9 @@ mod tests {
     #[test]
     fn refine_rewrites_by_index() {
         let host = MockHost::new();
-        let client = Canned::new(vec![r#"{"summaries":[{"index":0,"summary":"Add retry support"}]}"#]);
+        let client = Canned::new(vec![
+            r#"{"summaries":[{"index":0,"summary":"Add retry support"}]}"#,
+        ]);
         let commits = vec![commit("feat", "add retry")];
         let out = refine_summaries(&ctx(&host), &client, commits).unwrap();
         assert_eq!(out[0].summary, "Add retry support");
