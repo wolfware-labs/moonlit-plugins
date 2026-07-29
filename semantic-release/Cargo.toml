@@ -19,3 +19,8 @@ regex = "1"
 semver = "1"
 globset = "0.4"
 chrono = { version = "0.4", default-features = false, features = ["std"] }
+
+[dev-dependencies]
+moonlit-engine = { git = "https://github.com/wolfware-labs/moonlit", rev = "db48c373f6f73a30378219a94eb7174f66cc99a6" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tempfile = "3"
