@@ -17,6 +17,22 @@ built as `wasm32-wasip2` WebAssembly components on
 Build a plugin: `cargo build --target wasm32-wasip2 --release` (requires
 `rustup target add wasm32-wasip2`).
 
+## Testing
+
+`cargo test` runs each plugin's unit tests and its engine-driven integration
+tests (the plugin is loaded as a WebAssembly component and exercised through
+the engine).
+
+End-to-end tests that drive the plugins through the `moonlit` CLI are gated
+behind the `cli-e2e` feature so the default run needs no external binary. To
+run them, provide a `moonlit` binary and enable the feature:
+
+```
+MOONLIT_BIN=/path/to/moonlit cargo test --features cli-e2e
+```
+
+Without `MOONLIT_BIN`, the tests look for `moonlit` on `PATH`.
+
 ## License
 
 Licensed under either of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE) at your option.
