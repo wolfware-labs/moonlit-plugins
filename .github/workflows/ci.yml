@@ -32,7 +32,14 @@ jobs:
       - name: Install the moonlit CLI
         env:
           MOONLIT_UNMANAGED_INSTALL: ${{ runner.temp }}/moonlit
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wolfware-labs/moonlit/releases/latest/download/moonlit-installer.sh | sh
+        run: |
+          mkdir -p "$MOONLIT_UNMANAGED_INSTALL"
+          # -f so a bad URL fails the step instead of piping nothing into sh.
+          curl --proto '=https' --tlsv1.2 -fLsS \
+            https://github.com/wolfware-labs/moonlit/releases/latest/download/moonlit-installer.sh \
+            -o "$RUNNER_TEMP/moonlit-installer.sh"
+          sh "$RUNNER_TEMP/moonlit-installer.sh"
+          test -x "$MOONLIT_UNMANAGED_INSTALL/moonlit"
       - name: CLI end-to-end tests
         env:
           MOONLIT_BIN: ${{ runner.temp }}/moonlit/moonlit
