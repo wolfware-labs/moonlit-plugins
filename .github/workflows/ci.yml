@@ -29,3 +29,15 @@ jobs:
         run: cargo build --target wasm32-wasip2 --release
       - name: test
         run: cargo test
+      - name: Install the moonlit CLI
+        env:
+          MOONLIT_UNMANAGED_INSTALL: ${{ runner.temp }}/moonlit
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/wolfware-labs/moonlit/releases/latest/download/moonlit-installer.sh | sh
+      - name: CLI end-to-end tests
+        env:
+          MOONLIT_BIN: ${{ runner.temp }}/moonlit/moonlit
+        run: >
+          cargo test --workspace --features cli-e2e
+          --test docker_cli --test dotnet_cli --test git_cli --test github_cli
+          --test gitlab_cli --test moonlit_cli --test nodejs_cli
+          --test semantic_release_cli --test slack_cli
