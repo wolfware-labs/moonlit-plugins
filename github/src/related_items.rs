@@ -19,7 +19,7 @@ struct CommitRef {
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct RelatedItemsConfig {
+pub struct RelatedItemsInput {
     /// Commits to inspect for merged PRs and their linked issues.
     commits: Vec<CommitRef>,
     /// Include merged pull requests in the result. Defaults to true.
@@ -28,7 +28,7 @@ pub struct RelatedItemsConfig {
     include_issues: bool,
 }
 
-impl Default for RelatedItemsConfig {
+impl Default for RelatedItemsInput {
     fn default() -> Self {
         Self {
             commits: Vec::new(),
@@ -38,7 +38,7 @@ impl Default for RelatedItemsConfig {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct PrOut {
     number: i64,
@@ -51,7 +51,7 @@ struct PrOut {
     merge_commit_sha: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct IssueOut {
     number: i64,
@@ -62,6 +62,19 @@ struct IssueOut {
     updated_at: String,
     closed_at: Option<String>,
     pull_request_number: i64,
+}
+
+/// Output published by `related-items`. Each collection is omitted when empty
+/// (matching the original conditional output). `prs` and `pullRequests` carry the
+/// same PR list (a compatibility alias).
+#[derive(Serialize, Default, schemars::JsonSchema)]
+pub struct RelatedItemsOutput {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    prs: Vec<PrOut>,
+    #[serde(skip_serializing_if = "Vec::is_empty", rename = "pullRequests")]
+    pull_requests: Vec<PrOut>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    issues: Vec<IssueOut>,
 }
 
 fn s(v: &Value, k: &str) -> String {
@@ -105,12 +118,13 @@ pub struct RelatedItems;
 impl Middleware for RelatedItems {
     const NAME: &'static str = "related-items";
     const DESCRIPTION: &'static str = "merged PRs and linked issues for a commit set";
-    type Config = RelatedItemsConfig;
+    type Input = RelatedItemsInput;
+    type Output = RelatedItemsOutput;
 
-    fn execute(&self, ctx: &Context, cfg: RelatedItemsConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if cfg.commits.is_empty() {
             ctx.log_info("No commits provided; skipping related-items lookup.");
-            return MiddlewareResult::success();
+            return MiddlewareResult::ok(RelatedItemsOutput::default());
         }
         let context = match resolve_context(ctx) {
             Ok(c) => c,
@@ -180,14 +194,10 @@ impl Middleware for RelatedItems {
             issues.sort_by(|a, b| b.created_at.cmp(&a.created_at));
         }
 
-        MiddlewareResult::success_with(|o| {
-            if !prs.is_empty() {
-                o.set("prs", &prs);
-                o.set("pullRequests", &prs);
-            }
-            if !issues.is_empty() {
-                o.set("issues", &issues);
-            }
+        MiddlewareResult::ok(RelatedItemsOutput {
+            prs: prs.clone(),
+            pull_requests: prs,
+            issues,
         })
     }
 }
@@ -222,7 +232,7 @@ mod tests {
         let shared = GithubShared::default();
         let pc = GithubPluginConfig { token: "t".into() };
         let ctx = ctx_with(&host, &shared, &pc);
-        let r = run(&RelatedItems, &ctx, RelatedItemsConfig::default());
+        let r = run(&RelatedItems, &ctx, RelatedItemsInput::default());
         assert!(r.is_success());
         assert!(host.recorded_requests().is_empty());
     }
@@ -239,7 +249,7 @@ mod tests {
         let shared = GithubShared::default();
         let pc = GithubPluginConfig { token: "t".into() };
         let ctx = ctx_with(&host, &shared, &pc);
-        let cfg = RelatedItemsConfig {
+        let cfg = RelatedItemsInput {
             commits: vec![CommitRef { sha: "aaa".into() }],
             include_pull_requests: true,
             include_issues: false,
@@ -268,7 +278,7 @@ mod tests {
         let shared = GithubShared::default();
         let pc = GithubPluginConfig { token: "t".into() };
         let ctx = ctx_with(&host, &shared, &pc);
-        let cfg = RelatedItemsConfig {
+        let cfg = RelatedItemsInput {
             commits: vec![CommitRef { sha: "aaa".into() }],
             include_pull_requests: true,
             include_issues: true,
