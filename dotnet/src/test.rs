@@ -39,13 +39,18 @@ fn outcome(exit_code: i32, counters: Option<TrxCounters>) -> MiddlewareResult {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct TestConfig {
+    /// Project or solution file to test. Defaults to the one in the working directory.
     pub project: String,
+    /// Build configuration. Defaults to "Release".
     pub configuration: String,
+    /// Test filter expression passed to `dotnet test --filter`.
     pub filter: Option<String>,
+    /// Run tests without building first (reuse existing build output). Defaults to false.
     pub no_build: bool,
+    /// Collect code coverage during the run. Defaults to false.
     pub collect_coverage: bool,
 }
 

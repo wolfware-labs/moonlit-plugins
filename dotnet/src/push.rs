@@ -5,11 +5,14 @@ use crate::dotnet::{dotnet, exit_phrase, resolve};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PushConfig {
+    /// Path or glob to the `.nupkg` package(s) to push. Required.
     pub package: String,
+    /// NuGet source to push to. Defaults to nuget.org.
     pub source: Option<String>,
+    /// API key for the NuGet source. Omit for sources that need no key.
     pub api_key: Option<String>,
 }
 

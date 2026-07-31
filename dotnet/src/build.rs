@@ -5,15 +5,22 @@ use crate::version::{assembly_or_file_version, informational_version};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct BuildConfig {
+    /// Project or solution file to build. Defaults to the one in the working directory.
     pub project: String,
+    /// SemVer used to derive assembly metadata when the specific versions are unset.
     pub version: Option<String>,
+    /// Explicit assembly version. Overrides the value derived from `version`.
     pub assembly_version: Option<String>,
+    /// Explicit file version. Overrides the value derived from `version`.
     pub file_version: Option<String>,
+    /// Explicit informational version. Overrides the value derived from `version`.
     pub informational_version: Option<String>,
+    /// Build configuration. Defaults to "Release".
     pub configuration: String,
+    /// Skip the implicit restore before building. Defaults to false.
     pub no_restore: bool,
 }
 
