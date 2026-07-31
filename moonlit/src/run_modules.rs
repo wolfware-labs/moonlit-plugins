@@ -1,12 +1,16 @@
 use moonlit_sdk::prelude::*;
 use std::collections::BTreeMap;
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RunModulesConfig {
+    /// Module pipelines to run: each a directory or a `.yml`/`.yaml` file path.
     pub module_paths: Vec<String>,
+    /// Stages to run within each module. Empty runs the module's default stages.
     pub stages: Vec<String>,
+    /// Keep running the remaining modules after one fails, instead of stopping. Defaults to false.
     pub continue_on_module_error: bool,
+    /// Extra arguments passed through to each module run, as key/value pairs.
     pub arguments: BTreeMap<String, String>,
 }
 
