@@ -1767,12 +1767,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "moonlit-engine"
+version = "1.0.0"
+source = "git+https://github.com/wolfware-labs/moonlit?rev=4262dfce5148676f8bc12ff7c0e282ae9ce1d4cd#4262dfce5148676f8bc12ff7c0e282ae9ce1d4cd"
+dependencies = [
+ "anyhow",
+ "base64",
+ "chrono",
+ "dirs",
+ "dotenvy",
+ "globset",
+ "hex",
+ "hyper",
+ "indexmap",
+ "miette",
+ "oci-client",
+ "regex",
+ "reqwest",
+ "rhai",
+ "saphyr-parser",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "tokio-util",
+ "toml 0.8.23",
+ "wasmtime",
+ "wasmtime-wasi",
+ "wasmtime-wasi-http",
+]
+
+[[package]]
 name = "moonlit-plugin-docker"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "schemars",
  "serde",
@@ -1786,8 +1819,8 @@ name = "moonlit-plugin-dotnet"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "regex",
  "schemars",
@@ -1802,8 +1835,8 @@ name = "moonlit-plugin-git"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "regex",
  "schemars",
@@ -1818,8 +1851,8 @@ name = "moonlit-plugin-github"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "regex",
  "schemars",
@@ -1834,8 +1867,8 @@ name = "moonlit-plugin-gitlab"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "regex",
  "schemars",
@@ -1850,8 +1883,8 @@ name = "moonlit-plugin-moonlit"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "schemars",
  "serde",
@@ -1865,8 +1898,8 @@ name = "moonlit-plugin-nodejs"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "schemars",
  "serde",
@@ -1882,8 +1915,8 @@ dependencies = [
  "assert_cmd",
  "chrono",
  "globset",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 0.2.0",
+ "moonlit-sdk 0.2.1",
  "predicates",
  "regex",
  "schemars",
@@ -1899,8 +1932,8 @@ name = "moonlit-plugin-slack"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-engine 1.0.0",
+ "moonlit-sdk 0.3.0",
  "predicates",
  "schemars",
  "serde",
@@ -1917,7 +1950,22 @@ checksum = "ce56e754e0533c5c55b77290e4597cc62a6a48506d5d9231ca8c64a8f5826b15"
 dependencies = [
  "chrono",
  "flate2",
- "moonlit-sdk-macros",
+ "moonlit-sdk-macros 0.2.0",
+ "schemars",
+ "serde",
+ "serde_json",
+ "wit-bindgen 0.59.0",
+]
+
+[[package]]
+name = "moonlit-sdk"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a51d22fe9d7d089a5eced71fdf1e929adaef7bf9a3a90daa55e3301b72822128"
+dependencies = [
+ "chrono",
+ "flate2",
+ "moonlit-sdk-macros 0.3.0",
  "schemars",
  "serde",
  "serde_json",
@@ -1929,6 +1977,18 @@ name = "moonlit-sdk-macros"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0906948d68affa919490e58cb0aea35fb07ce0c6a046e229d32da085c657ab1"
+dependencies = [
+ "base64",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "moonlit-sdk-macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0e16b152fab1d47e1af2b7eedcd51e3006afe495cf2e64939892e558f787af0"
 dependencies = [
  "base64",
  "proc-macro2",
@@ -2973,7 +3033,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
