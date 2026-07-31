@@ -4,10 +4,12 @@ use crate::npm::{npm, require_package_json};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct TestConfig {
+    /// Directory containing package.json. Defaults to ".".
     pub directory: String,
+    /// package.json script to run for tests. Defaults to "test".
     pub script: String,
 }
 

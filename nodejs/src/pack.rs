@@ -29,11 +29,14 @@ fn dest_wd_rel(directory: &str, dest: &str) -> String {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PackConfig {
+    /// Directory containing package.json. Defaults to ".".
     pub directory: String,
+    /// Version to set in package.json before packing. Omit to leave it unchanged.
     pub version: Option<String>,
+    /// Directory to write the `.tgz` into. Defaults to the package directory.
     pub destination: Option<String>,
 }
 

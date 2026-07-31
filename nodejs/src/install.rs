@@ -4,11 +4,14 @@ use crate::npm::{exit_phrase, has_lockfile, npm, require_package_json};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct InstallConfig {
+    /// Directory containing package.json. Defaults to ".".
     pub directory: String,
+    /// Install only production dependencies (omit devDependencies). Defaults to false.
     pub production: bool,
+    /// Force `npm ci` (true) or `npm install` (false). Omit to auto-select by lockfile presence.
     pub ci: Option<bool>,
 }
 

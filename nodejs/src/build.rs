@@ -4,11 +4,14 @@ use crate::npm::{exit_phrase, maybe_set_version, npm, require_package_json};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct BuildConfig {
+    /// Directory containing package.json. Defaults to ".".
     pub directory: String,
+    /// package.json script to run for the build. Defaults to "build".
     pub command: String,
+    /// Version to set in package.json before building. Omit to leave it unchanged.
     pub version: Option<String>,
 }
 

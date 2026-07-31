@@ -22,6 +22,7 @@ use test::Test;
 
 moonlit_plugin! {
     name: "nodejs",
+    icon: "icon.png",
     config: NodeConfig,
     middlewares: [Install, RunScript, Build, Pack, Push, Test],
 }
