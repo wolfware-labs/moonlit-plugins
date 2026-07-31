@@ -10,17 +10,21 @@ use crate::api;
 use crate::config::GithubPluginConfig;
 use crate::context::resolve_context;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct CommitRef {
+    /// Commit SHA to find related pull requests and issues for.
     sha: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RelatedItemsConfig {
+    /// Commits to inspect for merged PRs and their linked issues.
     commits: Vec<CommitRef>,
+    /// Include merged pull requests in the result. Defaults to true.
     include_pull_requests: bool,
+    /// Include issues linked to those pull requests. Defaults to true.
     include_issues: bool,
 }
 

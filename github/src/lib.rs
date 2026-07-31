@@ -18,6 +18,7 @@ use write_variables::WriteVariables;
 
 moonlit_plugin! {
     name: "github",
+    icon: "icon.png",
     config: GithubPluginConfig,
     state: GithubShared,
     middlewares: [RelatedItems, CreateRelease, WriteVariables],

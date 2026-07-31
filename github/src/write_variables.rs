@@ -6,10 +6,12 @@ use std::collections::BTreeMap;
 
 use moonlit_sdk::prelude::*;
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct WriteVariablesConfig {
+    /// Key/value pairs appended to the file at `$GITHUB_OUTPUT`.
     output: BTreeMap<String, String>,
+    /// Key/value pairs appended to the file at `$GITHUB_ENV`.
     environment: BTreeMap<String, String>,
 }
 
