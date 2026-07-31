@@ -6,7 +6,7 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct RunScriptConfig {
+pub struct RunScriptInput {
     /// Directory containing package.json. Defaults to ".".
     pub directory: String,
     /// Name of the package.json script to run. Required.
@@ -15,7 +15,7 @@ pub struct RunScriptConfig {
     pub args: Vec<String>,
 }
 
-impl Default for RunScriptConfig {
+impl Default for RunScriptInput {
     fn default() -> Self {
         Self {
             directory: ".".to_string(),
@@ -31,9 +31,10 @@ pub struct RunScript;
 impl Middleware for RunScript {
     const NAME: &'static str = "run-script";
     const DESCRIPTION: &'static str = "run a package.json script via npm run";
-    type Config = RunScriptConfig;
+    type Input = RunScriptInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: RunScriptConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(msg) = require_package_json(ctx.working_dir(), &cfg.directory) {
             return MiddlewareResult::failure(msg);
         }
@@ -46,7 +47,7 @@ impl Middleware for RunScript {
             .args(args)
             .stream(LineHandler::severity())
         {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => {
                 let combined = format!("{}\n{}", o.stdout(), o.stderr()).to_ascii_lowercase();
                 if combined.contains("missing script:") {
@@ -91,7 +92,7 @@ mod tests {
     fn builds_run_argv_with_forwarded_args() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = RunScriptConfig {
+        let cfg = RunScriptInput {
             script: "lint".into(),
             args: vec!["--fix".into(), "src".into()],
             ..Default::default()
@@ -107,7 +108,7 @@ mod tests {
     fn no_args_omits_double_dash() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = RunScriptConfig {
+        let cfg = RunScriptInput {
             script: "build".into(),
             ..Default::default()
         };
@@ -120,7 +121,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new()
             .with_process_result(1, vec![err("npm error Missing script: \"deploy\"")]);
-        let cfg = RunScriptConfig {
+        let cfg = RunScriptInput {
             script: "deploy".into(),
             ..Default::default()
         };
@@ -135,7 +136,7 @@ mod tests {
     fn other_non_zero_maps_to_generic() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(2, vec![err("build failed: TS2304")]);
-        let cfg = RunScriptConfig {
+        let cfg = RunScriptInput {
             script: "build".into(),
             ..Default::default()
         };
@@ -150,7 +151,7 @@ mod tests {
     fn missing_package_json_fails_before_spawn() {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
-        let cfg = RunScriptConfig {
+        let cfg = RunScriptInput {
             script: "build".into(),
             ..Default::default()
         };

@@ -6,7 +6,7 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct InstallConfig {
+pub struct InstallInput {
     /// Directory containing package.json. Defaults to ".".
     pub directory: String,
     /// Install only production dependencies (omit devDependencies). Defaults to false.
@@ -15,7 +15,7 @@ pub struct InstallConfig {
     pub ci: Option<bool>,
 }
 
-impl Default for InstallConfig {
+impl Default for InstallInput {
     fn default() -> Self {
         Self {
             directory: ".".to_string(),
@@ -31,9 +31,10 @@ pub struct Install;
 impl Middleware for Install {
     const NAME: &'static str = "install";
     const DESCRIPTION: &'static str = "install npm dependencies (ci or install)";
-    type Config = InstallConfig;
+    type Input = InstallInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: InstallConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(msg) = require_package_json(ctx.working_dir(), &cfg.directory) {
             return MiddlewareResult::failure(msg);
         }
@@ -52,7 +53,7 @@ impl Middleware for Install {
             .args(args)
             .stream(LineHandler::severity())
         {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => MiddlewareResult::failure(format!(
                 "Failed to install dependencies: {}",
                 exit_phrase(o.exit_code)
@@ -83,7 +84,7 @@ mod tests {
     fn lockfile_present_selects_ci() {
         let d = proj_dir(true);
         let host = MockHost::new().with_process_result(0, vec![]);
-        assert!(run(&Install, &ctx(&host, d.path()), InstallConfig::default()).is_success());
+        assert!(run(&Install, &ctx(&host, d.path()), InstallInput::default()).is_success());
         assert_eq!(host.recorded_commands()[0].args, vec!["ci".to_string()]);
     }
 
@@ -91,7 +92,7 @@ mod tests {
     fn no_lockfile_selects_install() {
         let d = proj_dir(false);
         let host = MockHost::new().with_process_result(0, vec![]);
-        let _ = run(&Install, &ctx(&host, d.path()), InstallConfig::default());
+        let _ = run(&Install, &ctx(&host, d.path()), InstallInput::default());
         assert_eq!(
             host.recorded_commands()[0].args,
             vec!["install".to_string()]
@@ -102,7 +103,7 @@ mod tests {
     fn explicit_ci_false_overrides_lockfile() {
         let d = proj_dir(true);
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = InstallConfig {
+        let cfg = InstallInput {
             ci: Some(false),
             ..Default::default()
         };
@@ -117,7 +118,7 @@ mod tests {
     fn production_appends_omit_dev() {
         let d = proj_dir(true);
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = InstallConfig {
+        let cfg = InstallInput {
             production: true,
             ..Default::default()
         };
@@ -132,7 +133,7 @@ mod tests {
     fn missing_package_json_fails_before_spawn() {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
-        let w = run(&Install, &ctx(&host, d.path()), InstallConfig::default()).into_wit();
+        let w = run(&Install, &ctx(&host, d.path()), InstallInput::default()).into_wit();
         assert!(!w.successful);
         assert!(w
             .error_message
@@ -145,7 +146,7 @@ mod tests {
     fn non_zero_exit_maps_to_install_failure() {
         let d = proj_dir(true);
         let host = MockHost::new().with_process_result(1, vec![]);
-        let w = run(&Install, &ctx(&host, d.path()), InstallConfig::default()).into_wit();
+        let w = run(&Install, &ctx(&host, d.path()), InstallInput::default()).into_wit();
         assert_eq!(
             w.error_message.as_deref(),
             Some("Failed to install dependencies: Npm command failed with exit code 1")

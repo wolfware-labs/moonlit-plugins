@@ -9,7 +9,7 @@ use std::path::Path;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct PushConfig {
+pub struct PushInput {
     /// Path to the `.tgz` tarball to publish. Required.
     pub package: String,
     /// npm registry to publish to. Defaults to the registry in .npmrc or npmjs.org.
@@ -22,7 +22,7 @@ pub struct PushConfig {
     pub access: Option<String>,
 }
 
-impl Default for PushConfig {
+impl Default for PushInput {
     fn default() -> Self {
         Self {
             package: String::new(),
@@ -78,9 +78,10 @@ pub struct Push;
 impl Middleware for Push {
     const NAME: &'static str = "push";
     const DESCRIPTION: &'static str = "publish a .tgz tarball to an npm registry";
-    type Config = PushConfig;
+    type Input = PushInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: PushConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let pkg_path = resolve(ctx.working_dir(), &cfg.package);
         if !pkg_path.is_file() {
             return MiddlewareResult::failure(format!(
@@ -138,7 +139,7 @@ impl Middleware for Push {
         args.push(".moonlit/npm-push/.npmrc".to_string());
 
         let result = match npm(ctx, ".").args(args).stream(LineHandler::severity()) {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => {
                 let combined = format!("{}\n{}", o.stdout(), o.stderr()).to_ascii_lowercase();
                 if combined.contains("epublishconflict")
@@ -241,7 +242,7 @@ mod tests {
         let d = pkg_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
         let plugin = NodeConfig::default();
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "app-1.0.0.tgz".into(),
             registry: Some("https://feed".into()),
             token: Some("SECRET".into()),
@@ -281,7 +282,7 @@ mod tests {
             serde_json::json!({ "registry": "https://plug", "token": "PTOK" }),
         )
         .unwrap();
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "app-1.0.0.tgz".into(),
             ..Default::default()
         };
@@ -297,7 +298,7 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
         let plugin = NodeConfig::default();
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "nope.tgz".into(),
             token: Some("T".into()),
             ..Default::default()
@@ -314,7 +315,7 @@ mod tests {
         let d = pkg_dir();
         let host = MockHost::new();
         let plugin = NodeConfig::default(); // blank token
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "app-1.0.0.tgz".into(),
             ..Default::default()
         };
@@ -337,7 +338,7 @@ mod tests {
         );
         let plugin: NodeConfig =
             serde_json::from_value(serde_json::json!({ "token": "T" })).unwrap();
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "app-1.0.0.tgz".into(),
             ..Default::default()
         };
@@ -357,7 +358,7 @@ mod tests {
         );
         let plugin: NodeConfig =
             serde_json::from_value(serde_json::json!({ "token": "T" })).unwrap();
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "app-1.0.0.tgz".into(),
             ..Default::default()
         };
@@ -379,7 +380,7 @@ mod tests {
         );
         let plugin: NodeConfig =
             serde_json::from_value(serde_json::json!({ "token": "T" })).unwrap();
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "app-1.0.0.tgz".into(),
             ..Default::default()
         };
@@ -400,7 +401,7 @@ mod tests {
         );
         let plugin: NodeConfig =
             serde_json::from_value(serde_json::json!({ "token": "T" })).unwrap();
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "app-1.0.0.tgz".into(),
             ..Default::default()
         };

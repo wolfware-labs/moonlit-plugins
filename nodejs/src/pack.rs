@@ -31,7 +31,7 @@ fn dest_wd_rel(directory: &str, dest: &str) -> String {
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct PackConfig {
+pub struct PackInput {
     /// Directory containing package.json. Defaults to ".".
     pub directory: String,
     /// Version to set in package.json before packing. Omit to leave it unchanged.
@@ -40,7 +40,7 @@ pub struct PackConfig {
     pub destination: Option<String>,
 }
 
-impl Default for PackConfig {
+impl Default for PackInput {
     fn default() -> Self {
         Self {
             directory: ".".to_string(),
@@ -53,12 +53,20 @@ impl Default for PackConfig {
 #[derive(Default)]
 pub struct Pack;
 
+/// Output published by `pack`: the working-dir-relative path to the built tarball.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct PackOutput {
+    #[serde(rename = "packagePath")]
+    pub package_path: String,
+}
+
 impl Middleware for Pack {
     const NAME: &'static str = "pack";
     const DESCRIPTION: &'static str = "pack the package into a .tgz tarball";
-    type Config = PackConfig;
+    type Input = PackInput;
+    type Output = PackOutput;
 
-    fn execute(&self, ctx: &Context, cfg: PackConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(msg) = require_package_json(ctx.working_dir(), &cfg.directory) {
             return MiddlewareResult::failure(msg);
         }
@@ -106,7 +114,7 @@ impl Middleware for Pack {
         match parse_pack_filename(&out.stdout()) {
             Some(filename) => {
                 let package_path = format!("{wd_rel}/{filename}");
-                MiddlewareResult::success_with(|o| o.set("packagePath", package_path))
+                MiddlewareResult::ok(PackOutput { package_path })
             }
             None => MiddlewareResult::failure("No package tarball was created."),
         }
@@ -167,7 +175,7 @@ mod tests {
     fn pack_builds_default_argv() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        let _ = run(&Pack, &ctx(&host, d.path()), PackConfig::default());
+        let _ = run(&Pack, &ctx(&host, d.path()), PackInput::default());
         assert_eq!(
             host.recorded_commands()[0].args,
             vec!["pack", "--pack-destination", ".moonlit/npm-pack", "--json"]
@@ -180,7 +188,7 @@ mod tests {
         let host = MockHost::new()
             .with_process_result(0, vec![])
             .with_process_result(0, vec![]);
-        let cfg = PackConfig {
+        let cfg = PackInput {
             version: Some("1.4.0".into()),
             ..Default::default()
         };
@@ -194,7 +202,7 @@ mod tests {
     fn pack_custom_destination_used_in_argv() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = PackConfig {
+        let cfg = PackInput {
             destination: Some("out/tarballs".into()),
             ..Default::default()
         };
@@ -215,7 +223,7 @@ mod tests {
             text: r#"[{"filename":"pkg-1.0.0.tgz"}]"#.to_string(),
         };
         let host = MockHost::new().with_process_result(0, vec![json_chunk]);
-        let w = run(&Pack, &ctx(&host, d.path()), PackConfig::default()).into_wit();
+        let w = run(&Pack, &ctx(&host, d.path()), PackInput::default()).into_wit();
         assert!(w.successful);
         let pp = w
             .output
@@ -231,7 +239,7 @@ mod tests {
     fn pack_no_tarball_fails() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]); // empty stdout
-        let w = run(&Pack, &ctx(&host, d.path()), PackConfig::default()).into_wit();
+        let w = run(&Pack, &ctx(&host, d.path()), PackInput::default()).into_wit();
         assert_eq!(
             w.error_message.as_deref(),
             Some("No package tarball was created.")
@@ -242,7 +250,7 @@ mod tests {
     fn pack_missing_package_json_fails_before_spawn() {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
-        let w = run(&Pack, &ctx(&host, d.path()), PackConfig::default()).into_wit();
+        let w = run(&Pack, &ctx(&host, d.path()), PackInput::default()).into_wit();
         assert!(w
             .error_message
             .unwrap()
@@ -263,7 +271,7 @@ mod tests {
             text: r#"[{"filename":"pkg-1.0.0.tgz"}]"#.to_string(),
         };
         let host = MockHost::new().with_process_result(0, vec![json_chunk]);
-        let cfg = PackConfig {
+        let cfg = PackInput {
             destination: Some("out/tarballs".into()),
             ..Default::default()
         };
@@ -278,7 +286,7 @@ mod tests {
     fn pack_blank_destination_falls_back_to_default() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = PackConfig {
+        let cfg = PackInput {
             destination: Some("".into()),
             ..Default::default()
         };
