@@ -12,14 +12,20 @@ use crate::version::{
     calculate_next, with_metadata, with_prerelease, without_metadata, AnalyzerConfig,
 };
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct CalculateVersionConfig {
+    /// Version used when there is no base version to bump from. Defaults to "1.0.0".
     initial_version: String,
+    /// Current version to bump. Omit to derive from the initial version.
     base_version: Option<String>,
+    /// Branch name, matched against `prereleaseMappings` for prerelease labels.
     branch: String,
+    /// Commits to analyze. Omit to use the commits stored by the `analyze` step.
     commits: Option<Vec<ConventionalCommit>>,
+    /// Rules mapping commit types/scopes to version bumps.
     conventional_commit_rules: AnalyzerConfig,
+    /// Branch-name → prerelease-label map (e.g. "develop" → "beta").
     prerelease_mappings: BTreeMap<String, String>,
 }
 

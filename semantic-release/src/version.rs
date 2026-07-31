@@ -11,11 +11,13 @@ fn default_true() -> bool {
 }
 
 /// Bump rules + the "breaking is always major" switch. Defaults to `create_default`.
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalyzerConfig {
+    /// Treat any breaking change as a major bump, regardless of the matched rule. Defaults to true.
     #[serde(default = "default_true")]
     pub breaking_changes_always_major: bool,
+    /// Ordered type/scope → bump rules. Defaults to the standard conventional-commit set.
     #[serde(default = "default_release_rules")]
     pub rules: Vec<ReleaseRule>,
 }

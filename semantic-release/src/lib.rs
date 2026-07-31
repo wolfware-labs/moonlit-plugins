@@ -24,6 +24,7 @@ use models::SrShared;
 
 moonlit_plugin! {
     name: "semantic-release",
+    icon: "icon.png",
     config: SrPluginConfig,
     state: SrShared,
     middlewares: [Analyze, CalculateVersion, GenerateChangelog],

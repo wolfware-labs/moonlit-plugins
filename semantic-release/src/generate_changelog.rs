@@ -5,12 +5,16 @@ use moonlit_sdk::prelude::*;
 use crate::changelog::ChangelogGeneratorConfig;
 use crate::models::{ConventionalCommit, SrShared};
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct GenerateChangelogConfig {
+    /// Commits to include. Omit to use the commits stored by the `analyze` step.
     commits: Option<Vec<ConventionalCommit>>,
+    /// Use AI to drop commits that are not user-facing. Requires the plugin `ai` config. Defaults to false.
     filter_non_user_facing_commits: bool,
+    /// Use AI to rewrite each commit summary for the changelog. Requires the plugin `ai` config. Defaults to false.
     refine_commits_summary: bool,
+    /// Rules mapping commits to changelog categories.
     changelog_rules: ChangelogGeneratorConfig,
 }
 

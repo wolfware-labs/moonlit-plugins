@@ -5,53 +5,75 @@ use serde::Serialize;
 
 /// A raw commit as produced by the `git` plugin's `commits.details` output.
 /// Only `sha`, `date`, and `message` participate in the algorithm.
-#[derive(Deserialize, Clone, Default)]
+#[derive(Deserialize, Clone, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Commit {
+    /// Commit SHA.
     pub sha: String,
+    /// Commit author name.
     pub author: String,
+    /// Commit author email.
     pub email: String,
+    /// Author date (ISO 8601).
     pub date: String,
+    /// Full commit message (subject and body).
     pub message: String,
 }
 
 /// A parsed conventional commit. Emitted by `analyze`, stored in `SrShared`, and
 /// consumed by `calculate-version` / `generate-changelog`. `#[serde(default)]` lets
 /// config-provided arrays omit fields and round-trips analyze's own output.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ConventionalCommit {
+    /// Commit SHA.
     pub sha: String,
+    /// One-line summary (the conventional-commit description).
     pub summary: String,
+    /// Conventional-commit type (e.g. "feat", "fix").
     #[serde(rename = "type")]
     pub kind: String,
+    /// Optional scope (the parenthesized part of the type).
     pub scope: Option<String>,
+    /// Commit body (everything after the summary line).
     pub body: String,
+    /// Whether the commit is marked as a breaking change.
     pub is_breaking_change: bool,
+    /// The original, unparsed commit message.
     pub raw_message: String,
+    /// Author date (ISO 8601).
     pub date: String,
 }
 
 /// Version bump magnitude. Declaration order == `Ord` order (None < Patch < Minor
 /// < Major), which the algorithm relies on for "highest bump wins" and
 /// "bump <= current-version-level".
-#[derive(Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
+#[derive(
+    Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default, schemars::JsonSchema,
+)]
 #[repr(u8)]
 pub enum VersionBumpType {
+    /// No version bump.
     #[default]
     None = 0,
+    /// Patch bump (x.y.Z).
     Patch = 1,
+    /// Minor bump (x.Y.0).
     Minor = 2,
+    /// Major bump (X.0.0).
     Major = 3,
 }
 
 /// A version-bump rule: match by type/scope, produce a bump.
-#[derive(Deserialize, Clone, Default)]
+#[derive(Deserialize, Clone, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ReleaseRule {
+    /// Conventional-commit type this rule matches (empty/omitted matches any type).
     #[serde(rename = "type")]
     pub kind: Option<String>,
+    /// Scope this rule matches (empty/omitted matches any scope).
     pub scope: Option<String>,
+    /// Version bump to apply when a commit matches this rule.
     pub release: VersionBumpType,
 }
 
@@ -82,15 +104,20 @@ impl ReleaseRule {
 /// A changelog category rule. `matches` ports 1.x exactly: a breaking commit
 /// satisfies the breaking rule's first clause and fails every non-breaking rule's
 /// `is_breaking_change == false` clause, so it lands in "Breaking Changes" only.
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangelogRule {
+    /// Conventional-commit type this category collects (e.g. "feat").
     #[serde(rename = "type")]
     pub kind: Option<String>,
+    /// Match breaking-change commits instead of matching by type.
     #[serde(default)]
     pub is_breaking_change: bool,
+    /// Emoji/icon shown next to the category heading.
     pub icon: String,
+    /// Category heading (e.g. "Features").
     pub section: String,
+    /// Short description shown under the category heading.
     pub summary: String,
 }
 

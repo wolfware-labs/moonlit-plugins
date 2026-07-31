@@ -7,9 +7,10 @@ use moonlit_sdk::prelude::Deserialize;
 use crate::models::{ChangelogRule, ConventionalCommit};
 
 /// Category rules. Defaults to `create_default` (the exact 1.x rule set).
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangelogGeneratorConfig {
+    /// Ordered category rules mapping commits to changelog sections. Defaults to the standard set.
     #[serde(default = "default_rules")]
     pub rules: Vec<ChangelogRule>,
 }
