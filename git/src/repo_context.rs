@@ -1,7 +1,15 @@
 //! `git repo-context` — current branch and origin remote URL.
 
-use crate::shared::{ensure_repo, git, NoConfig};
+use crate::shared::{ensure_repo, git};
 use moonlit_sdk::prelude::*;
+
+/// Output published by `repo-context`: the current branch and origin remote URL.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct RepoContextOutput {
+    pub branch: String,
+    #[serde(rename = "remoteUrl")]
+    pub remote_url: String,
+}
 
 #[derive(Default)]
 pub struct RepoContext;
@@ -9,9 +17,10 @@ pub struct RepoContext;
 impl Middleware for RepoContext {
     const NAME: &'static str = "repo-context";
     const DESCRIPTION: &'static str = "current branch and origin remote URL";
-    type Config = NoConfig;
+    type Input = NoInput;
+    type Output = RepoContextOutput;
 
-    fn execute(&self, ctx: &Context, _cfg: NoConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, _input: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(f) = ensure_repo(ctx) {
             return f;
         }
@@ -34,10 +43,7 @@ impl Middleware for RepoContext {
             Ok(o) if o.success() => o.stdout().trim().to_string(),
             _ => return MiddlewareResult::failure("Remote 'origin' not found."),
         };
-        MiddlewareResult::success_with(|o| {
-            o.set("branch", branch);
-            o.set("remoteUrl", remote_url);
-        })
+        MiddlewareResult::ok(RepoContextOutput { branch, remote_url })
     }
 }
 
@@ -61,7 +67,7 @@ mod tests {
             .with_process_result(0, vec![out("main")]) // branch
             .with_process_result(0, vec![out("git@github.com:me/repo.git")]); // remote
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let w = run(&RepoContext, &ctx, NoConfig::default()).into_wit();
+        let w = run(&RepoContext, &ctx, NoInput::default()).into_wit();
         assert!(w.successful);
         let map: std::collections::HashMap<_, _> = w.output.into_iter().collect();
         assert_eq!(map["branch"], "\"main\"");
@@ -79,7 +85,7 @@ mod tests {
             .with_process_result(0, vec![out("main")])
             .with_process_result(128, vec![]); // remote get-url fails
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let w = run(&RepoContext, &ctx, NoConfig::default()).into_wit();
+        let w = run(&RepoContext, &ctx, NoInput::default()).into_wit();
         assert!(!w.successful);
         assert_eq!(
             w.error_message.as_deref(),
@@ -91,7 +97,7 @@ mod tests {
     fn not_a_repo_fails_with_canonical_message() {
         let host = MockHost::new().with_process_result(128, vec![]);
         let ctx = Context::new(&host, "/nope".into(), "s".into());
-        let w = run(&RepoContext, &ctx, NoConfig::default()).into_wit();
+        let w = run(&RepoContext, &ctx, NoInput::default()).into_wit();
         assert!(!w.successful);
         assert_eq!(
             w.error_message.as_deref(),

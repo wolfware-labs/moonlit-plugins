@@ -10,18 +10,14 @@ pub struct GitShared {
     pub latest_tag_sha: Shared<Option<String>>,
 }
 
-/// Config type for middlewares that take no parameters.
-#[derive(Deserialize, Default, schemars::JsonSchema)]
-#[serde(default)]
-pub struct NoConfig {}
-
 /// A `git` command pre-seeded with the repo working directory as cwd.
 pub fn git<'a>(ctx: &Context<'a>) -> Command<'a> {
     ctx.command("git").cwd(ctx.working_dir())
 }
 
-/// Probe repo presence; map any failure to the canonical message.
-pub fn ensure_repo(ctx: &Context) -> Result<(), MiddlewareResult> {
+/// Probe repo presence; map any failure to the canonical message. Generic over
+/// the caller's middleware output type so the `Err` fits any `execute` return.
+pub fn ensure_repo<T>(ctx: &Context) -> Result<(), MiddlewareResult<T>> {
     match git(ctx).arg("rev-parse").arg("--git-dir").run() {
         Ok(out) if out.success() => Ok(()),
         _ => Err(MiddlewareResult::failure(
@@ -47,7 +43,7 @@ mod tests {
     fn ensure_repo_ok_when_git_dir_resolves() {
         let host = MockHost::new().with_process_result(0, vec![out(".git")]);
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        assert!(ensure_repo(&ctx).is_ok());
+        assert!(ensure_repo::<NoOutput>(&ctx).is_ok());
         let cmds = host.recorded_commands();
         assert_eq!(cmds[0].program, "git");
         assert_eq!(cmds[0].cwd.as_deref(), Some("/repo"));
@@ -58,7 +54,7 @@ mod tests {
     fn ensure_repo_maps_failure_to_canonical_message() {
         let host = MockHost::new().with_process_result(128, vec![]);
         let ctx = Context::new(&host, "/nope".into(), "s".into());
-        let msg = match ensure_repo(&ctx) {
+        let msg = match ensure_repo::<NoOutput>(&ctx) {
             Ok(()) => panic!("expected a not-a-repo failure"),
             Err(f) => f.error_message().unwrap().to_string(),
         };

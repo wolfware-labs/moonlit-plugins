@@ -9,7 +9,7 @@ const LOG_FORMAT: &str = "--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%B%x1e";
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct CommitsConfig {
+pub struct CommitsInput {
     /// Commit SHA to start after (exclusive). Takes precedence over `since` and the shared context.
     since_sha: Option<String>,
     /// When no explicit boundary is set, start after the tag found by the `latest-tag` step. Defaults to true.
@@ -20,7 +20,7 @@ pub struct CommitsConfig {
     until: String,
 }
 
-impl Default for CommitsConfig {
+impl Default for CommitsInput {
     fn default() -> Self {
         Self {
             since_sha: None,
@@ -31,13 +31,20 @@ impl Default for CommitsConfig {
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, schemars::JsonSchema)]
 struct Commit {
     sha: String,
     author: String,
     email: String,
     date: String,
     message: String,
+}
+
+/// Output published by `commits`: the parsed commits (newest-first) and their count.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct CommitsOutput {
+    details: Vec<Commit>,
+    count: i64,
 }
 
 fn parse_commits(raw: &str) -> Vec<Commit> {
@@ -63,9 +70,10 @@ pub struct Commits;
 impl Middleware for Commits {
     const NAME: &'static str = "commits";
     const DESCRIPTION: &'static str = "commits in a range (newest-first, boundary excluded)";
-    type Config = CommitsConfig;
+    type Input = CommitsInput;
+    type Output = CommitsOutput;
 
-    fn execute(&self, ctx: &Context, cfg: CommitsConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(f) = ensure_repo(ctx) {
             return f;
         }
@@ -123,10 +131,7 @@ impl Middleware for Commits {
 
         let details = parse_commits(&out.stdout());
         let count = details.len() as i64;
-        MiddlewareResult::success_with(|o| {
-            o.set("details", &details);
-            o.set("count", count);
-        })
+        MiddlewareResult::ok(CommitsOutput { details, count })
     }
 }
 
@@ -158,7 +163,7 @@ mod tests {
         let shared = GitShared::default();
         // useSharedContext defaults true but state is empty -> boundary None -> HEAD.
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let w = run(&Commits, &ctx, CommitsConfig::default()).into_wit();
+        let w = run(&Commits, &ctx, CommitsInput::default()).into_wit();
         assert!(w.successful);
         let map: std::collections::HashMap<String, serde_json::Value> = w
             .output
@@ -192,7 +197,7 @@ mod tests {
         let shared = GitShared::default();
         shared.latest_tag_sha.set(Some("tagsha".to_string()));
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let w = run(&Commits, &ctx, CommitsConfig::default()).into_wit();
+        let w = run(&Commits, &ctx, CommitsInput::default()).into_wit();
         assert!(w.successful);
         let cmds = host.recorded_commands();
         assert_eq!(
@@ -209,7 +214,7 @@ mod tests {
         let shared = GitShared::default();
         shared.latest_tag_sha.set(Some("ignored".to_string()));
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let cfg = CommitsConfig {
+        let cfg = CommitsInput {
             since_sha: Some("explicit".to_string()),
             ..Default::default()
         };
@@ -235,7 +240,7 @@ mod tests {
             .with_process_result(128, vec![]); // rev-parse <since> fails
         let shared = GitShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let cfg = CommitsConfig {
+        let cfg = CommitsInput {
             since: Some("nope".to_string()),
             ..Default::default()
         };
@@ -255,7 +260,7 @@ mod tests {
             .with_process_result(0, vec![out("")]); // git log
         let shared = GitShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let cfg = CommitsConfig {
+        let cfg = CommitsInput {
             since: Some("main".to_string()),
             ..Default::default()
         };
