@@ -56,7 +56,7 @@ fn host_of(base_url: &str) -> &str {
 /// `base_url` from plugin config (github's context needs none), shells `git remote
 /// get-url origin` (no user-controlled positional → no injection surface), and
 /// parses the project path out of the remote URL.
-pub fn resolve_context(ctx: &Context) -> Result<GitlabContext, MiddlewareResult> {
+pub fn resolve_context<T>(ctx: &Context) -> Result<GitlabContext, MiddlewareResult<T>> {
     if let Some(c) = ctx.state::<GitlabShared>().context.get() {
         return Ok(c);
     }
@@ -157,7 +157,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.project_path, "group/subgroup/project");
         assert_eq!(c.project_id, "group%2Fsubgroup%2Fproject");
         assert_eq!(c.web_url(), "https://gitlab.com/group/subgroup/project");
@@ -178,7 +178,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.project_path, "me/repo");
         assert_eq!(c.project_id, "me%2Frepo");
     }
@@ -190,7 +190,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.example.com/");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.project_path, "team/app");
         assert_eq!(c.api_base(), "https://gitlab.example.com/api/v4");
     }
@@ -202,7 +202,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let msg = match resolve_context(&ctx) {
+        let msg = match resolve_context::<NoOutput>(&ctx) {
             Ok(_) => panic!("github url must fail"),
             Err(f) => f.error_message().unwrap().to_string(),
         };
@@ -215,7 +215,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let msg = match resolve_context(&ctx) {
+        let msg = match resolve_context::<NoOutput>(&ctx) {
             Ok(_) => panic!("missing origin must fail"),
             Err(f) => f.error_message().unwrap().to_string(),
         };
@@ -230,8 +230,8 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let a = resolve_context(&ctx).unwrap_or_else(|_| panic!("first resolve"));
-        let b = resolve_context(&ctx).unwrap_or_else(|_| panic!("cached resolve"));
+        let a = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("first resolve"));
+        let b = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("cached resolve"));
         assert_eq!(a.project_id, b.project_id);
         assert_eq!(
             host.recorded_commands().len(),
@@ -249,7 +249,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.project_path, "group/project");
         assert_eq!(c.project_id, "group%2Fproject");
     }
@@ -262,7 +262,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.project_path, "22/repo");
     }
 
@@ -275,7 +275,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let msg = match resolve_context(&ctx) {
+        let msg = match resolve_context::<NoOutput>(&ctx) {
             Ok(_) => panic!("look-alike host must fail"),
             Err(f) => f.error_message().unwrap().to_string(),
         };
@@ -291,7 +291,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let msg = match resolve_context(&ctx) {
+        let msg = match resolve_context::<NoOutput>(&ctx) {
             Ok(_) => panic!("suffix host must fail"),
             Err(f) => f.error_message().unwrap().to_string(),
         };
@@ -304,7 +304,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc("https://gitlab.com");
         let ctx = ctx_with(&host, &sh, &cfg);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.project_path, "o/r");
         assert_eq!(c.project_id, "o%2Fr");
     }

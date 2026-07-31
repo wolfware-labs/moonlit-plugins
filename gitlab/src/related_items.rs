@@ -19,7 +19,7 @@ struct CommitRef {
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct RelatedItemsConfig {
+pub struct RelatedItemsInput {
     /// Commits to inspect for merged MRs and their closed issues.
     commits: Vec<CommitRef>,
     /// Include merged merge requests in the result. Defaults to true.
@@ -29,7 +29,7 @@ pub struct RelatedItemsConfig {
     include_issues: bool,
 }
 
-impl Default for RelatedItemsConfig {
+impl Default for RelatedItemsInput {
     fn default() -> Self {
         Self {
             commits: Vec::new(),
@@ -39,7 +39,7 @@ impl Default for RelatedItemsConfig {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct MrOut {
     iid: i64,
@@ -52,7 +52,7 @@ struct MrOut {
     merge_commit_sha: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct IssueOut {
     iid: i64,
@@ -63,6 +63,18 @@ struct IssueOut {
     updated_at: String,
     closed_at: Option<String>,
     merge_request_iid: i64,
+}
+
+/// Output published by `related-items`. Each collection is omitted when empty.
+/// `mrs` and `prs` carry the same merge-request list (a compatibility alias).
+#[derive(Serialize, Default, schemars::JsonSchema)]
+pub struct RelatedItemsOutput {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    mrs: Vec<MrOut>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    prs: Vec<MrOut>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    issues: Vec<IssueOut>,
 }
 
 fn s(v: &Value, k: &str) -> String {
@@ -91,12 +103,13 @@ pub struct RelatedItems;
 impl Middleware for RelatedItems {
     const NAME: &'static str = "related-items";
     const DESCRIPTION: &'static str = "merged MRs and closed issues for a commit set";
-    type Config = RelatedItemsConfig;
+    type Input = RelatedItemsInput;
+    type Output = RelatedItemsOutput;
 
-    fn execute(&self, ctx: &Context, cfg: RelatedItemsConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if cfg.commits.is_empty() {
             ctx.log_info("No commits provided; skipping related-items lookup.");
-            return MiddlewareResult::success();
+            return MiddlewareResult::ok(RelatedItemsOutput::default());
         }
         let context = match resolve_context(ctx) {
             Ok(c) => c,
@@ -177,14 +190,10 @@ impl Middleware for RelatedItems {
             issues.sort_by(|a, b| b.created_at.cmp(&a.created_at));
         }
 
-        MiddlewareResult::success_with(|o| {
-            if !mrs.is_empty() {
-                o.set("mrs", &mrs);
-                o.set("prs", &mrs);
-            }
-            if !issues.is_empty() {
-                o.set("issues", &issues);
-            }
+        MiddlewareResult::ok(RelatedItemsOutput {
+            mrs: mrs.clone(),
+            prs: mrs,
+            issues,
         })
     }
 }
@@ -224,7 +233,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let r = run(&RelatedItems, &ctx, RelatedItemsConfig::default());
+        let r = run(&RelatedItems, &ctx, RelatedItemsInput::default());
         assert!(r.is_success());
         assert!(host.recorded_requests().is_empty());
     }
@@ -241,7 +250,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = RelatedItemsConfig {
+        let config = RelatedItemsInput {
             commits: vec![CommitRef { sha: "aaa".into() }],
             include_merge_requests: true,
             include_issues: false,
@@ -272,7 +281,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = RelatedItemsConfig {
+        let config = RelatedItemsInput {
             commits: vec![CommitRef { sha: "sqsq".into() }],
             include_merge_requests: true,
             include_issues: false,
@@ -300,7 +309,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = RelatedItemsConfig {
+        let config = RelatedItemsInput {
             commits: vec![CommitRef { sha: "aaa".into() }],
             include_merge_requests: true,
             include_issues: true,
@@ -321,7 +330,7 @@ mod tests {
     #[test]
     fn include_pull_requests_alias_is_accepted() {
         // The camelCase alias `includePullRequests` must deserialize into include_merge_requests.
-        let cfg: RelatedItemsConfig = serde_json::from_str(
+        let cfg: RelatedItemsInput = serde_json::from_str(
             r#"{"commits":[],"includePullRequests":false,"includeIssues":false}"#,
         )
         .unwrap();
@@ -342,7 +351,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = RelatedItemsConfig {
+        let config = RelatedItemsInput {
             commits: vec![
                 CommitRef { sha: "aaa".into() },
                 CommitRef { sha: "bbb".into() },
@@ -376,7 +385,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = RelatedItemsConfig {
+        let config = RelatedItemsInput {
             commits: vec![
                 CommitRef { sha: "aaa".into() },
                 CommitRef { sha: "bbb".into() },

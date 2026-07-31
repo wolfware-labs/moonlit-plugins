@@ -12,7 +12,7 @@ use regex::Regex;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct WriteVariablesConfig {
+pub struct WriteVariablesInput {
     /// Key/value pairs written as dotenv lines (GitLab CI `artifacts:reports:dotenv`).
     output: BTreeMap<String, String>,
     /// Additional key/value pairs written as dotenv lines alongside `output`.
@@ -21,7 +21,7 @@ pub struct WriteVariablesConfig {
     file: String,
 }
 
-impl Default for WriteVariablesConfig {
+impl Default for WriteVariablesInput {
     fn default() -> Self {
         Self {
             output: BTreeMap::new(),
@@ -67,9 +67,10 @@ impl Middleware for WriteVariables {
     const NAME: &'static str = "write-variables";
     const DESCRIPTION: &'static str =
         "write step outputs / env to a dotenv file for artifacts:reports:dotenv";
-    type Config = WriteVariablesConfig;
+    type Input = WriteVariablesInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: WriteVariablesConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         // Merge: output first, then environment (environment wins on collision).
         let mut merged: BTreeMap<String, String> = cfg.output.clone();
         for (k, v) in &cfg.environment {
@@ -81,7 +82,7 @@ impl Middleware for WriteVariables {
             merged.insert(k.clone(), v.clone());
         }
         if merged.is_empty() {
-            return MiddlewareResult::success();
+            return MiddlewareResult::ok(NoOutput {});
         }
         // Path hardening: relative, within the working directory.
         if Path::new(&cfg.file).is_absolute()
@@ -112,7 +113,7 @@ impl Middleware for WriteVariables {
         if let Err(e) = f.write_all(content.as_bytes()) {
             return MiddlewareResult::failure(format!("Failed to write '{}': {e}", cfg.file));
         }
-        MiddlewareResult::success()
+        MiddlewareResult::ok(NoOutput {})
     }
 }
 
@@ -125,8 +126,8 @@ mod tests {
         output: &[(&str, &str)],
         environment: &[(&str, &str)],
         file: &str,
-    ) -> WriteVariablesConfig {
-        WriteVariablesConfig {
+    ) -> WriteVariablesInput {
+        WriteVariablesInput {
             output: output
                 .iter()
                 .map(|(k, v)| (k.to_string(), v.to_string()))
@@ -241,7 +242,7 @@ mod tests {
 
     #[test]
     fn default_file_is_moonlit_env() {
-        assert_eq!(WriteVariablesConfig::default().file, "moonlit.env");
+        assert_eq!(WriteVariablesInput::default().file, "moonlit.env");
     }
 
     #[test]

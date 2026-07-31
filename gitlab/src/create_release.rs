@@ -18,7 +18,7 @@ struct ItemRef {
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct CreateReleaseConfig {
+pub struct CreateReleaseInput {
     /// Release name/title. Required.
     name: String,
     /// Git tag the release points at. Required.
@@ -43,12 +43,20 @@ pub struct CreateReleaseConfig {
 #[derive(Default)]
 pub struct CreateRelease;
 
+/// Output published by `create-release`: the release name and its URL.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct CreateReleaseOutput {
+    pub name: String,
+    pub url: String,
+}
+
 impl Middleware for CreateRelease {
     const NAME: &'static str = "create-release";
     const DESCRIPTION: &'static str = "create a GitLab release and annotate related items";
-    type Config = CreateReleaseConfig;
+    type Input = CreateReleaseInput;
+    type Output = CreateReleaseOutput;
 
-    fn execute(&self, ctx: &Context, cfg: CreateReleaseConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if cfg.name.trim().is_empty() {
             return MiddlewareResult::failure("Release name is required.");
         }
@@ -142,9 +150,9 @@ impl Middleware for CreateRelease {
             cfg.label.as_deref(),
         );
 
-        MiddlewareResult::success_with(|o| {
-            o.set("name", out_name);
-            o.set("url", out_url);
+        MiddlewareResult::ok(CreateReleaseOutput {
+            name: out_name,
+            url: out_url,
         })
     }
 }
@@ -244,7 +252,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             tag: "v1".into(),
             body: Some("x".into()),
             ..Default::default()
@@ -264,7 +272,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0".into(),
             tag: "v1".into(),
             ..Default::default()
@@ -288,7 +296,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0.0".into(),
             tag: "v1.0.0".into(),
             body: Some("notes".into()),
@@ -320,7 +328,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0.0".into(),
             tag: "v1.0.0".into(),
             body: Some("notes".into()),
@@ -345,7 +353,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0.0".into(),
             tag: "v1.0.0".into(),
             body: Some("notes".into()),
@@ -368,7 +376,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0.0".into(),
             tag: "v1.0.0".into(),
             body: None,
@@ -406,7 +414,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0.0".into(),
             tag: "v1.0.0".into(),
             body: Some("notes".into()),
@@ -439,7 +447,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0.0".into(),
             tag: "v1.0.0".into(),
             body: Some("notes".into()),
@@ -472,7 +480,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0".into(),
             body: Some("x".into()),
             ..Default::default()
@@ -493,7 +501,7 @@ mod tests {
         let sh = GitlabShared::default();
         let cfg = pc();
         let ctx = ctx_with(&host, &sh, &cfg);
-        let config = CreateReleaseConfig {
+        let config = CreateReleaseInput {
             name: "1.0.0".into(),
             tag: "v1.0.0".into(),
             body: Some("notes".into()),
