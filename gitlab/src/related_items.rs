@@ -10,18 +10,22 @@ use crate::api;
 use crate::config::GitlabPluginConfig;
 use crate::context::resolve_context;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct CommitRef {
+    /// Commit SHA to find related merge requests and issues for.
     sha: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RelatedItemsConfig {
+    /// Commits to inspect for merged MRs and their closed issues.
     commits: Vec<CommitRef>,
+    /// Include merged merge requests in the result. Defaults to true.
     #[serde(alias = "includePullRequests")]
     include_merge_requests: bool,
+    /// Include issues closed by those merge requests. Defaults to true.
     include_issues: bool,
 }
 

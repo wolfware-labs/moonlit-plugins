@@ -10,11 +10,14 @@ use std::path::{Component, Path, PathBuf};
 use moonlit_sdk::prelude::*;
 use regex::Regex;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct WriteVariablesConfig {
+    /// Key/value pairs written as dotenv lines (GitLab CI `artifacts:reports:dotenv`).
     output: BTreeMap<String, String>,
+    /// Additional key/value pairs written as dotenv lines alongside `output`.
     environment: BTreeMap<String, String>,
+    /// Dotenv file to write within the working directory. Defaults to "moonlit.env".
     file: String,
 }
 
