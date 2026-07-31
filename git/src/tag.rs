@@ -3,10 +3,12 @@
 use crate::shared::{ensure_repo, git};
 use moonlit_sdk::prelude::*;
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct TagConfig {
+    /// Name of the tag to create (e.g. "v1.2.0"). Required.
     tag_name: String,
+    /// Annotation message. When set, creates an annotated tag instead of a lightweight one.
     message: Option<String>,
 }
 

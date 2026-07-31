@@ -19,6 +19,7 @@ use tag::Tag;
 
 moonlit_plugin! {
     name: "git",
+    icon: "icon.png",
     state: GitShared,
     middlewares: [RepoContext, LatestTag, Commits, Tag, Push],
 }

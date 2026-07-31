@@ -7,12 +7,16 @@ use moonlit_sdk::prelude::*;
 /// its internal newlines never collide with the field separators.
 const LOG_FORMAT: &str = "--format=%H%x1f%an%x1f%ae%x1f%aI%x1f%B%x1e";
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct CommitsConfig {
+    /// Commit SHA to start after (exclusive). Takes precedence over `since` and the shared context.
     since_sha: Option<String>,
+    /// When no explicit boundary is set, start after the tag found by the `latest-tag` step. Defaults to true.
     use_shared_context: bool,
+    /// Git revision to start after (exclusive), resolved to a commit (e.g. a tag or branch name).
     since: Option<String>,
+    /// Git revision to stop at (inclusive). Defaults to "HEAD".
     until: String,
 }
 

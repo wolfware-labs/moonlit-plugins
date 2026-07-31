@@ -4,11 +4,14 @@ use crate::shared::{ensure_repo, git, GitShared};
 use moonlit_sdk::prelude::*;
 use regex::RegexBuilder;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct LatestTagConfig {
+    /// Text stripped from the front of a matched tag before the version (e.g. "v").
     prefix: String,
+    /// Text stripped from the end of a matched tag after the version.
     suffix: String,
+    /// Regex the tag core (between prefix and suffix) must match. Defaults to a semver "X.Y.Z" pattern.
     pattern: String,
 }
 
