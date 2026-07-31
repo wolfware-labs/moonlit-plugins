@@ -4,11 +4,14 @@ use crate::npm::{exit_phrase, npm, require_package_json};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RunScriptConfig {
+    /// Directory containing package.json. Defaults to ".".
     pub directory: String,
+    /// Name of the package.json script to run. Required.
     pub script: String,
+    /// Extra arguments passed through to the script after `--`.
     pub args: Vec<String>,
 }
 

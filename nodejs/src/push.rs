@@ -7,13 +7,18 @@ use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 use std::path::Path;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PushConfig {
+    /// Path to the `.tgz` tarball to publish. Required.
     pub package: String,
+    /// npm registry to publish to. Defaults to the registry in .npmrc or npmjs.org.
     pub registry: Option<String>,
+    /// Auth token for the registry, kept off the argv via a scoped .npmrc.
     pub token: Option<String>,
+    /// Dist-tag to publish under. Defaults to "latest".
     pub tag: String,
+    /// Package access level ("public" or "restricted"). Omit for the registry default.
     pub access: Option<String>,
 }
 
