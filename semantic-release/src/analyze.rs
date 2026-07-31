@@ -6,12 +6,16 @@ use moonlit_sdk::prelude::*;
 use crate::convert::convert_all;
 use crate::models::{Commit, ConventionalCommit, SrShared};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AnalyzeConfig {
+    /// Raw commits to parse, typically wired from the git plugin's `commits.details` output.
     commits: Vec<Commit>,
+    /// Only keep commits whose scope is in this list. Omit to keep all scopes.
     include_scopes: Option<Vec<String>>,
+    /// Drop commits whose scope is in this list. Omit to exclude none.
     exclude_scopes: Option<Vec<String>>,
+    /// Keep commits that have no scope. Defaults to true.
     include_unscoped: bool,
 }
 
