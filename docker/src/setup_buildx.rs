@@ -6,14 +6,20 @@ use crate::state::DockerShared;
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct SetupBuildxConfig {
+    /// Name for the builder. Omit to let Docker generate one.
     pub name: Option<String>,
+    /// Buildx driver to use. Defaults to "docker-container".
     pub driver: String,
+    /// Driver endpoint (e.g. a remote Docker context). Omit for the local daemon.
     pub endpoint: Option<String>,
+    /// Bootstrap the builder immediately after creating it. Defaults to true.
     pub bootstrap: bool,
+    /// Record the builder name in shared state so `build-and-push` reuses it. Defaults to true.
     pub set_builder_variable: bool,
+    /// Target platforms the builder should support (e.g. "linux/amd64").
     pub platforms: Vec<String>,
 }
 

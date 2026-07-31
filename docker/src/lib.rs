@@ -19,6 +19,7 @@ use state::DockerShared;
 
 moonlit_plugin! {
     name: "docker",
+    icon: "icon.png",
     state: DockerShared,
     middlewares: [Login, SetupBuildx, BuildAndPush, Deploy],
 }

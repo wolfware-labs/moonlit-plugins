@@ -4,11 +4,14 @@ use crate::docker::{docker, fail};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct LoginConfig {
+    /// Registry host to authenticate against. Omit for Docker Hub.
     pub registry: Option<String>,
+    /// Registry username. Required.
     pub username: String,
+    /// Registry password or access token, fed to `docker login` via stdin. Required.
     pub password: String,
 }
 
