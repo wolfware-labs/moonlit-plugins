@@ -24,7 +24,7 @@ pub struct GithubShared {
 /// Resolve owner/repo, caching the result for the run. Shells `git remote
 /// get-url origin` (no user-controlled positional → no injection surface) and
 /// parses the GitHub URL.
-pub fn resolve_context(ctx: &Context) -> Result<GithubContext, MiddlewareResult> {
+pub fn resolve_context<T>(ctx: &Context) -> Result<GithubContext, MiddlewareResult<T>> {
     if let Some(c) = ctx.state::<GithubShared>().context.get() {
         return Ok(c);
     }
@@ -76,7 +76,7 @@ mod tests {
             .with_process_result(0, vec![out("https://github.com/octo/Hello-World.git")]);
         let shared = GithubShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.owner, "octo");
         assert_eq!(c.repo, "Hello-World");
         assert_eq!(
@@ -94,7 +94,7 @@ mod tests {
         let host = MockHost::new().with_process_result(0, vec![out("git@github.com:me/repo.git")]);
         let shared = GithubShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let c = resolve_context(&ctx).unwrap_or_else(|_| panic!("must resolve"));
+        let c = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("must resolve"));
         assert_eq!(c.owner, "me");
         assert_eq!(c.repo, "repo");
     }
@@ -105,7 +105,7 @@ mod tests {
             MockHost::new().with_process_result(0, vec![out("https://gitlab.com/me/repo.git")]);
         let shared = GithubShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let msg = match resolve_context(&ctx) {
+        let msg = match resolve_context::<NoOutput>(&ctx) {
             Ok(_) => panic!("gitlab url must fail"),
             Err(f) => f.error_message().unwrap().to_string(),
         };
@@ -117,7 +117,7 @@ mod tests {
         let host = MockHost::new().with_process_result(128, vec![]);
         let shared = GithubShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let msg = match resolve_context(&ctx) {
+        let msg = match resolve_context::<NoOutput>(&ctx) {
             Ok(_) => panic!("missing origin must fail"),
             Err(f) => f.error_message().unwrap().to_string(),
         };
@@ -132,7 +132,7 @@ mod tests {
             MockHost::new().with_process_result(0, vec![out("https://evilgithub.com/me/repo.git")]);
         let shared = GithubShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let msg = match resolve_context(&ctx) {
+        let msg = match resolve_context::<NoOutput>(&ctx) {
             Ok(_) => panic!("look-alike host must fail"),
             Err(f) => f.error_message().unwrap().to_string(),
         };
@@ -146,8 +146,8 @@ mod tests {
         let host = MockHost::new().with_process_result(0, vec![out("https://github.com/o/r.git")]);
         let shared = GithubShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let a = resolve_context(&ctx).unwrap_or_else(|_| panic!("first resolve"));
-        let b = resolve_context(&ctx).unwrap_or_else(|_| panic!("cached resolve"));
+        let a = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("first resolve"));
+        let b = resolve_context::<NoOutput>(&ctx).unwrap_or_else(|_| panic!("cached resolve"));
         assert_eq!(a.owner, b.owner);
         assert_eq!(
             host.recorded_commands().len(),

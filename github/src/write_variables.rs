@@ -8,7 +8,7 @@ use moonlit_sdk::prelude::*;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct WriteVariablesConfig {
+pub struct WriteVariablesInput {
     /// Key/value pairs appended to the file at `$GITHUB_OUTPUT`.
     output: BTreeMap<String, String>,
     /// Key/value pairs appended to the file at `$GITHUB_ENV`.
@@ -36,11 +36,11 @@ fn render_lines(map: &BTreeMap<String, String>) -> Result<String, String> {
     Ok(s)
 }
 
-fn append(
+fn append<T>(
     ctx: &Context,
     var: &str,
     map: &BTreeMap<String, String>,
-) -> Result<(), MiddlewareResult> {
+) -> Result<(), MiddlewareResult<T>> {
     let path = match ctx.env().var(var) {
         Some(p) if !p.is_empty() => p,
         _ => return Err(MiddlewareResult::failure(format!("{var} is not set."))),
@@ -73,9 +73,10 @@ pub struct WriteVariables;
 impl Middleware for WriteVariables {
     const NAME: &'static str = "write-variables";
     const DESCRIPTION: &'static str = "append step outputs / env to the GitHub Actions files";
-    type Config = WriteVariablesConfig;
+    type Input = WriteVariablesInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: WriteVariablesConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if !cfg.output.is_empty() {
             if let Err(f) = append(ctx, "GITHUB_OUTPUT", &cfg.output) {
                 return f;
@@ -86,7 +87,7 @@ impl Middleware for WriteVariables {
                 return f;
             }
         }
-        MiddlewareResult::success()
+        MiddlewareResult::ok(NoOutput {})
     }
 }
 
@@ -96,8 +97,8 @@ mod tests {
     use moonlit_sdk::process::{OutputChunk, StdioStream};
     use moonlit_sdk::testing::{run, MockHost};
 
-    fn cfg_out(pairs: &[(&str, &str)]) -> WriteVariablesConfig {
-        WriteVariablesConfig {
+    fn cfg_out(pairs: &[(&str, &str)]) -> WriteVariablesInput {
+        WriteVariablesInput {
             output: pairs
                 .iter()
                 .map(|(k, v)| (k.to_string(), v.to_string()))
