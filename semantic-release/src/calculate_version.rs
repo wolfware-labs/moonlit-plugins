@@ -14,7 +14,7 @@ use crate::version::{
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct CalculateVersionConfig {
+pub struct CalculateVersionInput {
     /// Version used when there is no base version to bump from. Defaults to "1.0.0".
     initial_version: String,
     /// Current version to bump. Omit to derive from the initial version.
@@ -29,7 +29,7 @@ pub struct CalculateVersionConfig {
     prerelease_mappings: BTreeMap<String, String>,
 }
 
-impl Default for CalculateVersionConfig {
+impl Default for CalculateVersionInput {
     fn default() -> Self {
         Self {
             initial_version: "1.0.0".to_string(),
@@ -45,12 +45,27 @@ impl Default for CalculateVersionConfig {
 #[derive(Default)]
 pub struct CalculateVersion;
 
+/// Output published by `calculate-version`. When there is no new version only
+/// `hasNewVersion` is present; the version fields appear on the new-version path.
+#[derive(Serialize, Default, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CalculateVersionOutput {
+    has_new_version: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next_full_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_prerelease: Option<bool>,
+}
+
 impl Middleware for CalculateVersion {
     const NAME: &'static str = "calculate-version";
     const DESCRIPTION: &'static str = "calculate the next semantic version";
-    type Config = CalculateVersionConfig;
+    type Input = CalculateVersionInput;
+    type Output = CalculateVersionOutput;
 
-    fn execute(&self, ctx: &Context, cfg: CalculateVersionConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let commits = cfg
             .commits
             .clone()
@@ -98,18 +113,19 @@ impl Middleware for CalculateVersion {
         };
 
         match next {
-            None => MiddlewareResult::success_with(|o| {
-                o.set("hasNewVersion", false);
+            None => MiddlewareResult::ok(CalculateVersionOutput {
+                has_new_version: false,
+                ..Default::default()
             }),
             Some(v) => {
                 let next_version = without_metadata(v.clone()).to_string();
                 let next_full = v.to_string();
                 let is_pre = !v.pre.is_empty();
-                MiddlewareResult::success_with(move |o| {
-                    o.set("hasNewVersion", true);
-                    o.set("nextVersion", next_version);
-                    o.set("nextFullVersion", next_full);
-                    o.set("isPrerelease", is_pre);
+                MiddlewareResult::ok(CalculateVersionOutput {
+                    has_new_version: true,
+                    next_version: Some(next_version),
+                    next_full_version: Some(next_full),
+                    is_prerelease: Some(is_pre),
                 })
             }
         }
@@ -158,7 +174,7 @@ mod tests {
     use moonlit_sdk::testing::{run, MockHost};
     use serde_json::Value;
 
-    fn cfg(json: Value) -> CalculateVersionConfig {
+    fn cfg(json: Value) -> CalculateVersionInput {
         moonlit_sdk::config::from_json_value(&json.to_string()).unwrap()
     }
     fn outputs(
@@ -171,7 +187,7 @@ mod tests {
     }
     fn ctx_run(
         shared: &SrShared,
-        c: CalculateVersionConfig,
+        c: CalculateVersionInput,
     ) -> moonlit_sdk::bindings::MiddlewareResult {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/w".into(), "s".into()).with_state(shared);
@@ -184,7 +200,7 @@ mod tests {
     #[test]
     fn empty_commits_fail_with_exact_message() {
         let shared = SrShared::default();
-        let w = ctx_run(&shared, CalculateVersionConfig::default());
+        let w = ctx_run(&shared, CalculateVersionInput::default());
         assert!(!w.successful);
         assert_eq!(
             w.error_message.as_deref(),

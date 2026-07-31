@@ -8,7 +8,7 @@ use crate::models::{Commit, ConventionalCommit, SrShared};
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct AnalyzeConfig {
+pub struct AnalyzeInput {
     /// Raw commits to parse, typically wired from the git plugin's `commits.details` output.
     commits: Vec<Commit>,
     /// Only keep commits whose scope is in this list. Omit to keep all scopes.
@@ -19,7 +19,7 @@ pub struct AnalyzeConfig {
     include_unscoped: bool,
 }
 
-impl Default for AnalyzeConfig {
+impl Default for AnalyzeInput {
     fn default() -> Self {
         Self {
             commits: Vec::new(),
@@ -33,28 +33,37 @@ impl Default for AnalyzeConfig {
 #[derive(Default)]
 pub struct Analyze;
 
+/// Output published by `analyze`: the parsed conventional commits and their count.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct AnalyzeOutput {
+    commits: Vec<ConventionalCommit>,
+    #[serde(rename = "commitCount")]
+    commit_count: i64,
+}
+
 impl Middleware for Analyze {
     const NAME: &'static str = "analyze";
     const DESCRIPTION: &'static str = "parse raw commits into conventional commits";
-    type Config = AnalyzeConfig;
+    type Input = AnalyzeInput;
+    type Output = AnalyzeOutput;
 
-    fn execute(&self, ctx: &Context, cfg: AnalyzeConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let filtered: Vec<ConventionalCommit> = convert_all(&cfg.commits)
             .into_iter()
             .filter(|c| keep(c, &cfg))
             .collect();
         ctx.state::<SrShared>().commits.set(filtered.clone());
         let count = filtered.len() as i64;
-        MiddlewareResult::success_with(move |o| {
-            o.set("commits", filtered);
-            o.set("commitCount", count);
+        MiddlewareResult::ok(AnalyzeOutput {
+            commits: filtered,
+            commit_count: count,
         })
     }
 }
 
 /// 1.x `CheckCommit`: unscoped -> includeUnscoped; else includeScopes (if any) wins,
 /// then excludeScopes (if any), else keep. Scope comparison is case-sensitive (1.x).
-fn keep(c: &ConventionalCommit, cfg: &AnalyzeConfig) -> bool {
+fn keep(c: &ConventionalCommit, cfg: &AnalyzeInput) -> bool {
     match &c.scope {
         None => cfg.include_unscoped,
         Some(scope) => {
@@ -75,7 +84,7 @@ mod tests {
     use moonlit_sdk::testing::{run, MockHost};
     use serde_json::Value;
 
-    fn cfg(json: Value) -> AnalyzeConfig {
+    fn cfg(json: Value) -> AnalyzeInput {
         moonlit_sdk::config::from_json_value(&json.to_string()).unwrap()
     }
 
@@ -151,7 +160,7 @@ mod tests {
         let shared = SrShared::default();
         let host = MockHost::new();
         let ctx = Context::new(&host, "/w".into(), "s".into()).with_state(&shared);
-        let w = run(&Analyze, &ctx, AnalyzeConfig::default()).into_wit();
+        let w = run(&Analyze, &ctx, AnalyzeInput::default()).into_wit();
         assert!(w.successful);
         let out = outputs(w);
         assert_eq!(out["commitCount"], serde_json::json!(0));
