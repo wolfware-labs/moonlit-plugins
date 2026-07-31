@@ -6,14 +6,20 @@ use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 use std::collections::BTreeMap;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct DeployConfig {
+    /// Image reference to deploy. Required.
     pub image: String,
+    /// Target `DOCKER_HOST` to deploy to (e.g. "ssh://user@host"). Required.
     pub host: String,
+    /// Compose file to bring up. Defaults to "docker-compose.yml".
     pub compose_file: Option<String>,
+    /// Swarm service name. Reserved; the swarm path is not supported in this release.
     pub service: Option<String>,
+    /// Environment variables passed to the compose deployment, as key/value pairs.
     pub environment: BTreeMap<String, String>,
+    /// Pull the image on the target host before starting. Defaults to true.
     pub pull: bool,
 }
 

@@ -7,20 +7,32 @@ use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 use std::collections::BTreeMap;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct BuildAndPushConfig {
+    /// Buildx builder to use. Omit to use the one recorded by `setup-buildx` (or the default).
     pub builder: Option<String>,
+    /// Image tags to apply (e.g. "myrepo/app:1.2.0").
     pub tags: Vec<String>,
+    /// Path to the Dockerfile. Defaults to "Dockerfile" in the context.
     pub file: Option<String>,
+    /// Build context directory. Defaults to ".".
     pub context: String,
+    /// Push the built image to the registry. When false, the image is loaded locally. Defaults to true.
     pub push: bool,
+    /// Build arguments, each "KEY=value".
     pub build_args: Vec<String>,
+    /// OCI labels to set on the image, as key/value pairs.
     pub labels: BTreeMap<String, String>,
+    /// Target platforms to build for (e.g. "linux/amd64,linux/arm64").
     pub platforms: Vec<String>,
+    /// Build without using the layer cache. Defaults to false.
     pub no_cache: bool,
+    /// Always attempt to pull newer base images. Defaults to false.
     pub pull: bool,
+    /// External cache sources (buildx `--cache-from` entries).
     pub cache_from: Vec<String>,
+    /// External cache destinations (buildx `--cache-to` entries).
     pub cache_to: Vec<String>,
 }
 
