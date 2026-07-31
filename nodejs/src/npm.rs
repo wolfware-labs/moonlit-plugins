@@ -70,11 +70,11 @@ pub fn prepare_output_dir(working_dir: &str, rel: &str) -> std::io::Result<PathB
 /// Optional `npm version <v> --no-git-tag-version --allow-same-version` step (used by
 /// `build`/`pack`). Returns `Some(failure)` to early-return; `None` on success or when
 /// `version` is absent/blank.
-pub fn maybe_set_version(
+pub fn maybe_set_version<T>(
     ctx: &Context,
     directory: &str,
     version: &Option<String>,
-) -> Option<MiddlewareResult> {
+) -> Option<MiddlewareResult<T>> {
     let v = version.as_deref().filter(|s| !s.trim().is_empty())?;
     let args = vec![
         "version".to_string(),
@@ -177,8 +177,8 @@ mod tests {
     fn maybe_set_version_noop_when_blank() {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/wd".into(), "build".into());
-        assert!(maybe_set_version(&ctx, ".", &None).is_none());
-        assert!(maybe_set_version(&ctx, ".", &Some("  ".to_string())).is_none());
+        assert!(maybe_set_version::<NoOutput>(&ctx, ".", &None).is_none());
+        assert!(maybe_set_version::<NoOutput>(&ctx, ".", &Some("  ".to_string())).is_none());
         assert!(host.recorded_commands().is_empty());
     }
 
@@ -186,7 +186,7 @@ mod tests {
     fn maybe_set_version_runs_expected_argv() {
         let host = MockHost::new().with_process_result(0, vec![]);
         let ctx = Context::new(&host, "/wd".into(), "build".into());
-        assert!(maybe_set_version(&ctx, ".", &Some("1.2.3".to_string())).is_none());
+        assert!(maybe_set_version::<NoOutput>(&ctx, ".", &Some("1.2.3".to_string())).is_none());
         let cmds = host.recorded_commands();
         assert_eq!(
             cmds[0].args,
@@ -203,7 +203,7 @@ mod tests {
     fn maybe_set_version_failure_maps_message() {
         let host = MockHost::new().with_process_result(1, vec![]);
         let ctx = Context::new(&host, "/wd".into(), "build".into());
-        let f = maybe_set_version(&ctx, ".", &Some("1.2.3".to_string()))
+        let f = maybe_set_version::<NoOutput>(&ctx, ".", &Some("1.2.3".to_string()))
             .expect("expected failure")
             .into_wit();
         assert_eq!(

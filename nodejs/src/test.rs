@@ -6,14 +6,14 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct TestConfig {
+pub struct TestInput {
     /// Directory containing package.json. Defaults to ".".
     pub directory: String,
     /// package.json script to run for tests. Defaults to "test".
     pub script: String,
 }
 
-impl Default for TestConfig {
+impl Default for TestInput {
     fn default() -> Self {
         Self {
             directory: ".".to_string(),
@@ -28,9 +28,10 @@ pub struct Test;
 impl Middleware for Test {
     const NAME: &'static str = "test";
     const DESCRIPTION: &'static str = "run the npm test script";
-    type Config = TestConfig;
+    type Input = TestInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: TestConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(msg) = require_package_json(ctx.working_dir(), &cfg.directory) {
             return MiddlewareResult::failure(msg);
         }
@@ -39,7 +40,7 @@ impl Middleware for Test {
             .args(args)
             .stream(LineHandler::severity())
         {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(_) => MiddlewareResult::failure("Tests failed."),
             Err(e) => MiddlewareResult::failure(format!("Failed to run tests: {e}")),
         }
@@ -64,7 +65,7 @@ mod tests {
     fn default_runs_npm_run_test() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        assert!(run(&Test, &ctx(&host, d.path()), TestConfig::default()).is_success());
+        assert!(run(&Test, &ctx(&host, d.path()), TestInput::default()).is_success());
         assert_eq!(host.recorded_commands()[0].args, vec!["run", "test"]);
     }
 
@@ -72,7 +73,7 @@ mod tests {
     fn custom_script_runs() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = TestConfig {
+        let cfg = TestInput {
             script: "test:ci".into(),
             ..Default::default()
         };
@@ -84,7 +85,7 @@ mod tests {
     fn non_zero_maps_to_tests_failed() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(1, vec![]);
-        let w = run(&Test, &ctx(&host, d.path()), TestConfig::default()).into_wit();
+        let w = run(&Test, &ctx(&host, d.path()), TestInput::default()).into_wit();
         assert_eq!(w.error_message.as_deref(), Some("Tests failed."));
     }
 
@@ -92,7 +93,7 @@ mod tests {
     fn missing_package_json_fails_before_spawn() {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
-        let w = run(&Test, &ctx(&host, d.path()), TestConfig::default()).into_wit();
+        let w = run(&Test, &ctx(&host, d.path()), TestInput::default()).into_wit();
         assert!(w
             .error_message
             .unwrap()

@@ -6,7 +6,7 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct BuildConfig {
+pub struct BuildInput {
     /// Directory containing package.json. Defaults to ".".
     pub directory: String,
     /// package.json script to run for the build. Defaults to "build".
@@ -15,7 +15,7 @@ pub struct BuildConfig {
     pub version: Option<String>,
 }
 
-impl Default for BuildConfig {
+impl Default for BuildInput {
     fn default() -> Self {
         Self {
             directory: ".".to_string(),
@@ -31,9 +31,10 @@ pub struct Build;
 impl Middleware for Build {
     const NAME: &'static str = "build";
     const DESCRIPTION: &'static str = "run the npm build script (optional version bump first)";
-    type Config = BuildConfig;
+    type Input = BuildInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: BuildConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(msg) = require_package_json(ctx.working_dir(), &cfg.directory) {
             return MiddlewareResult::failure(msg);
         }
@@ -45,7 +46,7 @@ impl Middleware for Build {
             .args(args)
             .stream(LineHandler::severity())
         {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => MiddlewareResult::failure(format!(
                 "Failed to build project: {}",
                 exit_phrase(o.exit_code)
@@ -73,7 +74,7 @@ mod tests {
     fn runs_command_without_version_step() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = BuildConfig {
+        let cfg = BuildInput {
             command: "compile".into(),
             ..Default::default()
         };
@@ -90,7 +91,7 @@ mod tests {
         let host = MockHost::new()
             .with_process_result(0, vec![])
             .with_process_result(0, vec![]);
-        let cfg = BuildConfig {
+        let cfg = BuildInput {
             version: Some("2.0.0".into()),
             ..Default::default()
         };
@@ -112,7 +113,7 @@ mod tests {
     fn version_step_failure_short_circuits() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(1, vec![]); // version step fails
-        let cfg = BuildConfig {
+        let cfg = BuildInput {
             version: Some("2.0.0".into()),
             ..Default::default()
         };
@@ -129,7 +130,7 @@ mod tests {
     fn non_zero_run_maps_to_build_failure() {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(3, vec![]);
-        let w = run(&Build, &ctx(&host, d.path()), BuildConfig::default()).into_wit();
+        let w = run(&Build, &ctx(&host, d.path()), BuildInput::default()).into_wit();
         assert_eq!(
             w.error_message.as_deref(),
             Some("Failed to build project: Npm command failed with exit code 3")
@@ -140,7 +141,7 @@ mod tests {
     fn missing_package_json_fails_before_spawn() {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
-        let w = run(&Build, &ctx(&host, d.path()), BuildConfig::default()).into_wit();
+        let w = run(&Build, &ctx(&host, d.path()), BuildInput::default()).into_wit();
         assert!(w
             .error_message
             .unwrap()
