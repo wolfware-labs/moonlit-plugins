@@ -7,7 +7,7 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct PushConfig {
+pub struct PushInput {
     /// Path or glob to the `.nupkg` package(s) to push. Required.
     pub package: String,
     /// NuGet source to push to. Defaults to nuget.org.
@@ -26,9 +26,10 @@ pub struct Push;
 impl Middleware for Push {
     const NAME: &'static str = "push";
     const DESCRIPTION: &'static str = "push a .nupkg package to a NuGet source";
-    type Config = PushConfig;
+    type Input = PushInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: PushConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let pkg_path = resolve(ctx.working_dir(), &cfg.package);
         if !pkg_path.is_file() {
             return MiddlewareResult::failure(format!(
@@ -72,7 +73,7 @@ impl Middleware for Push {
         ];
 
         match dotnet(ctx).args(args).stream(LineHandler::severity()) {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => {
                 let combined = format!("{}\n{}", o.stdout(), o.stderr()).to_ascii_lowercase();
                 // Anchor on the `NNN (` status form (`401 (Unauthorized)`) or the words
@@ -128,7 +129,7 @@ mod tests {
         let host = MockHost::new().with_process_result(0, vec![]);
         let plugin = DotnetConfig::default();
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "App.1.0.0.nupkg".into(),
             source: Some("https://feed/v3".into()),
             api_key: Some("SECRET".into()),
@@ -160,7 +161,7 @@ mod tests {
         )
         .unwrap();
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "App.1.0.0.nupkg".into(),
             source: None,
             api_key: None,
@@ -178,7 +179,7 @@ mod tests {
         let host = MockHost::new();
         let plugin = DotnetConfig::default();
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "nope.nupkg".into(),
             source: Some("s".into()),
             api_key: Some("k".into()),
@@ -197,7 +198,7 @@ mod tests {
         let plugin: DotnetConfig =
             serde_json::from_value(serde_json::json!({ "nugetSource": "" })).unwrap();
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "App.1.0.0.nupkg".into(),
             source: None,
             api_key: Some("k".into()),
@@ -215,7 +216,7 @@ mod tests {
         let host = MockHost::new();
         let plugin = DotnetConfig::default(); // blank keys
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "App.1.0.0.nupkg".into(),
             source: Some("s".into()),
             api_key: None,
@@ -238,7 +239,7 @@ mod tests {
         );
         let plugin = DotnetConfig::default();
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "App.1.0.0.nupkg".into(),
             source: Some("s".into()),
             api_key: Some("k".into()),
@@ -256,7 +257,7 @@ mod tests {
         let host = MockHost::new().with_process_result(1, vec![err("error: connection reset")]);
         let plugin = DotnetConfig::default();
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "App.1.0.0.nupkg".into(),
             source: Some("s".into()),
             api_key: Some("k".into()),
@@ -281,7 +282,7 @@ mod tests {
         );
         let plugin = DotnetConfig::default();
         let ctx = ctx_with(&host, d.path(), &plugin);
-        let cfg = PushConfig {
+        let cfg = PushInput {
             package: "App.1.0.0.nupkg".into(),
             source: Some("s".into()),
             api_key: Some("k".into()),

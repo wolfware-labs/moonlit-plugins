@@ -5,9 +5,18 @@ use crate::trx::{parse_counters, TrxCounters};
 use moonlit_sdk::prelude::*;
 use moonlit_sdk::process::LineHandler;
 
+/// Output published by `test`: the TRX pass/fail/skip/total counts.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct TestOutput {
+    pub passed: u32,
+    pub failed: u32,
+    pub skipped: u32,
+    pub total: u32,
+}
+
 /// Decide the middleware result from the process exit code and the parsed TRX counters
 /// (`None` = results file absent/unparseable). Pure — unit-testable without a subprocess.
-fn outcome(exit_code: i32, counters: Option<TrxCounters>) -> MiddlewareResult {
+fn outcome(exit_code: i32, counters: Option<TrxCounters>) -> MiddlewareResult<TestOutput> {
     match counters {
         None => {
             if exit_code == 0 {
@@ -28,11 +37,11 @@ fn outcome(exit_code: i32, counters: Option<TrxCounters>) -> MiddlewareResult {
                     exit_phrase(exit_code)
                 ))
             } else {
-                MiddlewareResult::success_with(|o| {
-                    o.set("passed", c.passed);
-                    o.set("failed", c.failed);
-                    o.set("skipped", c.skipped);
-                    o.set("total", c.total);
+                MiddlewareResult::ok(TestOutput {
+                    passed: c.passed,
+                    failed: c.failed,
+                    skipped: c.skipped,
+                    total: c.total,
                 })
             }
         }
@@ -41,7 +50,7 @@ fn outcome(exit_code: i32, counters: Option<TrxCounters>) -> MiddlewareResult {
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct TestConfig {
+pub struct TestInput {
     /// Project or solution file to test. Defaults to the one in the working directory.
     pub project: String,
     /// Build configuration. Defaults to "Release".
@@ -54,7 +63,7 @@ pub struct TestConfig {
     pub collect_coverage: bool,
 }
 
-impl Default for TestConfig {
+impl Default for TestInput {
     fn default() -> Self {
         Self {
             project: String::new(),
@@ -72,9 +81,10 @@ pub struct Test;
 impl Middleware for Test {
     const NAME: &'static str = "test";
     const DESCRIPTION: &'static str = "run .NET tests and report pass/fail/skip counts";
-    type Config = TestConfig;
+    type Input = TestInput;
+    type Output = TestOutput;
 
-    fn execute(&self, ctx: &Context, cfg: TestConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let proj_path = resolve(ctx.working_dir(), &cfg.project);
         if !proj_path.is_file() {
             return MiddlewareResult::failure(format!(
@@ -204,7 +214,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "test".into());
-        let cfg = TestConfig {
+        let cfg = TestInput {
             project: "Tests.csproj".into(),
             filter: Some("Category=Unit".into()),
             no_build: true,
@@ -237,7 +247,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "test".into());
-        let cfg = TestConfig {
+        let cfg = TestInput {
             project: "Tests.csproj".into(),
             ..Default::default()
         };
@@ -262,7 +272,7 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "test".into());
-        let cfg = TestConfig {
+        let cfg = TestInput {
             project: "nope.csproj".into(),
             ..Default::default()
         };
