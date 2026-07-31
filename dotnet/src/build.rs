@@ -7,7 +7,7 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct BuildConfig {
+pub struct BuildInput {
     /// Project or solution file to build. Defaults to the one in the working directory.
     pub project: String,
     /// SemVer used to derive assembly metadata when the specific versions are unset.
@@ -24,7 +24,7 @@ pub struct BuildConfig {
     pub no_restore: bool,
 }
 
-impl Default for BuildConfig {
+impl Default for BuildInput {
     fn default() -> Self {
         Self {
             project: String::new(),
@@ -44,9 +44,10 @@ pub struct Build;
 impl Middleware for Build {
     const NAME: &'static str = "build";
     const DESCRIPTION: &'static str = "build a .NET project with derived assembly versions";
-    type Config = BuildConfig;
+    type Input = BuildInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: BuildConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let proj_path = resolve(ctx.working_dir(), &cfg.project);
         if !proj_path.is_file() {
             return MiddlewareResult::failure(format!(
@@ -88,7 +89,7 @@ impl Middleware for Build {
         }
 
         match dotnet(ctx).args(args).stream(LineHandler::severity()) {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => MiddlewareResult::failure(format!(
                 "Failed to build project: {}",
                 exit_phrase(o.exit_code)
@@ -114,7 +115,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "build".into());
-        let cfg = BuildConfig {
+        let cfg = BuildInput {
             project: "app.csproj".into(),
             version: Some("1.2.3-rc.1".into()),
             no_restore: true,
@@ -143,7 +144,7 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "build".into());
-        let cfg = BuildConfig {
+        let cfg = BuildInput {
             project: "nope.csproj".into(),
             version: Some("1.0.0".into()),
             ..Default::default()
@@ -160,7 +161,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new();
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "build".into());
-        let cfg = BuildConfig {
+        let cfg = BuildInput {
             project: "app.csproj".into(),
             ..Default::default()
         };
@@ -176,7 +177,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(1, vec![]);
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "build".into());
-        let cfg = BuildConfig {
+        let cfg = BuildInput {
             project: "app.csproj".into(),
             version: Some("1.0.0".into()),
             ..Default::default()

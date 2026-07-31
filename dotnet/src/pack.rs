@@ -42,7 +42,7 @@ fn selected_package(out_dir: &Path, out_rel: &str) -> Result<(String, Option<Str
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct PackConfig {
+pub struct PackInput {
     /// Project or solution file to pack. Defaults to the one in the working directory.
     pub project: String,
     /// SemVer used to derive assembly and package metadata when specific versions are unset.
@@ -63,7 +63,7 @@ pub struct PackConfig {
     pub no_restore: bool,
 }
 
-impl Default for PackConfig {
+impl Default for PackInput {
     fn default() -> Self {
         Self {
             project: String::new(),
@@ -79,15 +79,23 @@ impl Default for PackConfig {
     }
 }
 
+/// Output published by `pack`: the working-dir-relative path to the built package.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct PackOutput {
+    #[serde(rename = "packagePath")]
+    pub package_path: String,
+}
+
 #[derive(Default)]
 pub struct Pack;
 
 impl Middleware for Pack {
     const NAME: &'static str = "pack";
     const DESCRIPTION: &'static str = "pack a .NET project into a NuGet package";
-    type Config = PackConfig;
+    type Input = PackInput;
+    type Output = PackOutput;
 
-    fn execute(&self, ctx: &Context, cfg: PackConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let proj_path = resolve(ctx.working_dir(), &cfg.project);
         if !proj_path.is_file() {
             return MiddlewareResult::failure(format!(
@@ -168,7 +176,7 @@ impl Middleware for Pack {
                 if let Some(w) = &warning {
                     ctx.log_warn(w);
                 }
-                let mut out = MiddlewareResult::success_with(|o| o.set("packagePath", path));
+                let mut out = MiddlewareResult::ok(PackOutput { package_path: path });
                 if let Some(w) = warning {
                     out = out.with_warning(w);
                 }
@@ -230,7 +238,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "pack".into());
-        let cfg = PackConfig {
+        let cfg = PackInput {
             project: "App.csproj".into(),
             version: Some("1.2.3-rc.1+meta".into()),
             ..Default::default()
@@ -259,7 +267,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "pack".into());
-        let cfg = PackConfig {
+        let cfg = PackInput {
             project: "App.csproj".into(),
             version: Some("1.0.0".into()),
             no_build: true,
@@ -279,7 +287,7 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let host = MockHost::new();
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "pack".into());
-        let cfg = PackConfig {
+        let cfg = PackInput {
             project: "nope.csproj".into(),
             version: Some("1.0.0".into()),
             ..Default::default()
@@ -296,7 +304,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]);
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "pack".into());
-        let cfg = PackConfig {
+        let cfg = PackInput {
             project: "App.csproj".into(),
             ..Default::default()
         }; // no version
@@ -312,7 +320,7 @@ mod tests {
         let d = proj_dir();
         let host = MockHost::new().with_process_result(0, vec![]); // mock creates no file
         let ctx = Context::new(&host, d.path().to_str().unwrap().into(), "pack".into());
-        let cfg = PackConfig {
+        let cfg = PackInput {
             project: "App.csproj".into(),
             version: Some("1.0.0".into()),
             ..Default::default()
