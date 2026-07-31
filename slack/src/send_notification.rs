@@ -7,7 +7,7 @@ use moonlit_sdk::prelude::*;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct SendNotificationConfig {
+pub struct SendNotificationInput {
     /// Slack channel to post to (name like "#releases" or a channel ID). Required.
     pub channel: String,
     /// Plain-text message body to send. Required.
@@ -20,18 +20,19 @@ pub struct SendNotification;
 impl Middleware for SendNotification {
     const NAME: &'static str = "send-notification";
     const DESCRIPTION: &'static str = "send a notification message to a Slack channel";
-    type Config = SendNotificationConfig;
+    type Input = SendNotificationInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: SendNotificationConfig) -> MiddlewareResult {
-        if cfg.channel.trim().is_empty() {
+    fn execute(&self, ctx: &Context, input: Self::Input) -> MiddlewareResult<Self::Output> {
+        if input.channel.trim().is_empty() {
             return MiddlewareResult::failure("No Slack channel provided for notification.");
         }
-        if cfg.message.trim().is_empty() {
+        if input.message.trim().is_empty() {
             return MiddlewareResult::failure("No message provided for Slack notification.");
         }
         let token = ctx.plugin_config::<SlackPluginConfig>().token.clone();
-        match api::post_message(ctx, &token, &cfg.channel, &cfg.message) {
-            Ok(()) => MiddlewareResult::success(),
+        match api::post_message(ctx, &token, &input.channel, &input.message) {
+            Ok(()) => MiddlewareResult::ok(NoOutput {}),
             Err(e) => MiddlewareResult::failure(e),
         }
     }
@@ -42,8 +43,8 @@ mod tests {
     use super::*;
     use moonlit_sdk::testing::{run, MockHost};
 
-    fn cfg(channel: &str, message: &str) -> SendNotificationConfig {
-        SendNotificationConfig {
+    fn cfg(channel: &str, message: &str) -> SendNotificationInput {
+        SendNotificationInput {
             channel: channel.into(),
             message: message.into(),
         }
