@@ -8,23 +8,33 @@ use crate::api;
 use crate::config::GithubPluginConfig;
 use crate::context::resolve_context;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct ItemRef {
+    /// Pull request or issue number.
     number: i64,
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct CreateReleaseConfig {
+    /// Release name/title. Required.
     name: String,
+    /// Git tag the release points at. Required.
     tag: String,
+    /// Label to add to the related PRs/issues after the release is created.
     label: Option<String>,
+    /// Release body markdown. Overrides the changelog-rendered body when set.
     body: Option<String>,
+    /// Structured changelog categories rendered into the release body when `body` is unset.
     changelog: Vec<Category>,
+    /// Create the release as a draft. Defaults to false.
     draft: bool,
+    /// Mark the release as a prerelease. Defaults to false.
     prerelease: bool,
+    /// Pull requests to comment on and label after the release.
     pull_requests: Vec<ItemRef>,
+    /// Issues to comment on and label after the release.
     issues: Vec<ItemRef>,
 }
 

@@ -1735,39 +1735,6 @@ dependencies = [
 
 [[package]]
 name = "moonlit-engine"
-version = "0.1.0"
-source = "git+https://github.com/wolfware-labs/moonlit?rev=db48c373f6f73a30378219a94eb7174f66cc99a6#db48c373f6f73a30378219a94eb7174f66cc99a6"
-dependencies = [
- "anyhow",
- "base64",
- "chrono",
- "dirs",
- "dotenvy",
- "globset",
- "hex",
- "hyper",
- "indexmap",
- "miette",
- "oci-client",
- "regex",
- "reqwest",
- "rhai",
- "saphyr-parser",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "tempfile",
- "thiserror 2.0.19",
- "tokio",
- "tokio-util",
- "toml 0.8.23",
- "wasmtime",
- "wasmtime-wasi",
- "wasmtime-wasi-http",
-]
-
-[[package]]
-name = "moonlit-engine"
 version = "0.2.0"
 source = "git+https://github.com/wolfware-labs/moonlit?rev=eb52466a659015335d3e2fa9286db7b29e820927#eb52466a659015335d3e2fa9286db7b29e820927"
 dependencies = [
@@ -1804,9 +1771,10 @@ name = "moonlit-plugin-docker"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",
@@ -1818,10 +1786,11 @@ name = "moonlit-plugin-dotnet"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
  "regex",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",
@@ -1833,8 +1802,8 @@ name = "moonlit-plugin-git"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.2.0",
- "moonlit-sdk 0.2.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
  "regex",
  "schemars",
@@ -1849,10 +1818,11 @@ name = "moonlit-plugin-github"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
  "regex",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",
@@ -1864,10 +1834,11 @@ name = "moonlit-plugin-gitlab"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
  "regex",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",
@@ -1879,9 +1850,10 @@ name = "moonlit-plugin-moonlit"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",
@@ -1893,9 +1865,10 @@ name = "moonlit-plugin-nodejs"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",
@@ -1909,10 +1882,11 @@ dependencies = [
  "assert_cmd",
  "chrono",
  "globset",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
  "regex",
+ "schemars",
  "semver",
  "serde",
  "serde_json",
@@ -1925,9 +1899,10 @@ name = "moonlit-plugin-slack"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
- "moonlit-engine 0.1.0",
- "moonlit-sdk 0.1.0",
+ "moonlit-engine",
+ "moonlit-sdk",
  "predicates",
+ "schemars",
  "serde",
  "serde_json",
  "tempfile",
@@ -1936,42 +1911,17 @@ dependencies = [
 
 [[package]]
 name = "moonlit-sdk"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa302c7b92131b7a26a90f8c29870176123e3fd07162601027bbaa9972e5871f"
+checksum = "ce56e754e0533c5c55b77290e4597cc62a6a48506d5d9231ca8c64a8f5826b15"
 dependencies = [
  "chrono",
  "flate2",
- "moonlit-sdk-macros 0.1.0",
- "serde",
- "serde_json",
- "wit-bindgen 0.59.0",
-]
-
-[[package]]
-name = "moonlit-sdk"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62c7d7abab28baf346a41320e6d9455d7086c1294870518a9bc25880640135e0"
-dependencies = [
- "chrono",
- "flate2",
- "moonlit-sdk-macros 0.2.0",
+ "moonlit-sdk-macros",
  "schemars",
  "serde",
  "serde_json",
  "wit-bindgen 0.59.0",
-]
-
-[[package]]
-name = "moonlit-sdk-macros"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30345098b6fa81087c95023edc8b168c4f49bbeb9540fb92830a16a0c228475a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
 ]
 
 [[package]]
@@ -3023,7 +2973,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
