@@ -6,5 +6,6 @@ use run_modules::RunModules;
 
 moonlit_plugin! {
     name: "moonlit",
+    icon: "icon.png",
     middlewares: [RunModules],
 }
