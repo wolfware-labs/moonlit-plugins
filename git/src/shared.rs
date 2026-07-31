@@ -11,7 +11,7 @@ pub struct GitShared {
 }
 
 /// Config type for middlewares that take no parameters.
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(default)]
 pub struct NoConfig {}
 

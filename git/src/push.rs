@@ -3,10 +3,12 @@
 use crate::shared::{ensure_repo, git};
 use moonlit_sdk::prelude::*;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PushConfig {
+    /// Name of the remote to push to. Defaults to "origin".
     remote: String,
+    /// Also push tags after the branch. Defaults to true.
     push_tags: bool,
 }
 
