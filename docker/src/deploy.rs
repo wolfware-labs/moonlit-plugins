@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct DeployConfig {
+pub struct DeployInput {
     /// Image reference to deploy. Required.
     pub image: String,
     /// Target `DOCKER_HOST` to deploy to (e.g. "ssh://user@host"). Required.
@@ -23,7 +23,7 @@ pub struct DeployConfig {
     pub pull: bool,
 }
 
-impl Default for DeployConfig {
+impl Default for DeployInput {
     fn default() -> Self {
         Self {
             image: String::new(),
@@ -42,11 +42,12 @@ pub struct Deploy;
 impl Middleware for Deploy {
     const NAME: &'static str = "deploy";
     const DESCRIPTION: &'static str = "deploy an image via docker compose";
-    type Config = DeployConfig;
+    type Input = DeployInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: DeployConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, input: Self::Input) -> MiddlewareResult<Self::Output> {
         // Swarm path (service) is the unsupported stub — check first.
-        if cfg
+        if input
             .service
             .as_deref()
             .filter(|s| !s.trim().is_empty())
@@ -54,10 +55,14 @@ impl Middleware for Deploy {
         {
             return MiddlewareResult::failure("Swarm deploys are not supported yet.");
         }
-        if cfg.host.trim().is_empty() {
+        if input.host.trim().is_empty() {
             return MiddlewareResult::failure("A host is required for a compose deployment.");
         }
-        let compose_file = match cfg.compose_file.as_deref().filter(|f| !f.trim().is_empty()) {
+        let compose_file = match input
+            .compose_file
+            .as_deref()
+            .filter(|f| !f.trim().is_empty())
+        {
             Some(f) => f,
             None => {
                 return MiddlewareResult::failure(
@@ -71,15 +76,15 @@ impl Middleware for Deploy {
             .arg(compose_file)
             .arg("up")
             .arg("-d");
-        if cfg.pull {
+        if input.pull {
             c = c.arg("--pull").arg("always");
         }
-        for (k, v) in &cfg.environment {
+        for (k, v) in &input.environment {
             c = c.env(k, v);
         }
-        c = c.env("DOCKER_HOST", &cfg.host);
+        c = c.env("DOCKER_HOST", &input.host);
         match c.stream(LineHandler::severity()) {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => fail("deploy with docker compose", o.exit_code),
             Err(e) => {
                 MiddlewareResult::failure(format!("Failed to deploy with docker compose: {e}"))
@@ -100,7 +105,7 @@ mod tests {
     #[test]
     fn service_set_is_swarm_unsupported_before_spawn() {
         let host = MockHost::new();
-        let cfg = DeployConfig {
+        let cfg = DeployInput {
             host: "ssh://h".into(),
             service: Some("web".into()),
             ..Default::default()
@@ -116,7 +121,7 @@ mod tests {
     #[test]
     fn missing_compose_file_fails_before_spawn() {
         let host = MockHost::new();
-        let cfg = DeployConfig {
+        let cfg = DeployInput {
             host: "ssh://h".into(),
             ..Default::default()
         };
@@ -131,7 +136,7 @@ mod tests {
     #[test]
     fn blank_host_fails_before_spawn() {
         let host = MockHost::new();
-        let cfg = DeployConfig {
+        let cfg = DeployInput {
             compose_file: Some("c.yml".into()),
             ..Default::default()
         };
@@ -148,7 +153,7 @@ mod tests {
         let host = MockHost::new().with_process_result(0, vec![]);
         let mut environment = BTreeMap::new();
         environment.insert("DOCKER_HOST".into(), "ssh://evil".into());
-        let cfg = DeployConfig {
+        let cfg = DeployInput {
             host: "ssh://good".into(),
             compose_file: Some("c.yml".into()),
             environment,
@@ -170,7 +175,7 @@ mod tests {
         let host = MockHost::new().with_process_result(0, vec![]);
         let mut environment = BTreeMap::new();
         environment.insert("TAG".into(), "v1".into());
-        let cfg = DeployConfig {
+        let cfg = DeployInput {
             host: "ssh://user@h".into(),
             compose_file: Some("docker-compose.yml".into()),
             environment,
@@ -203,7 +208,7 @@ mod tests {
     #[test]
     fn pull_false_omits_pull_always() {
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = DeployConfig {
+        let cfg = DeployInput {
             host: "ssh://h".into(),
             compose_file: Some("c.yml".into()),
             pull: false,
@@ -219,7 +224,7 @@ mod tests {
     #[test]
     fn non_zero_exit_maps_to_deploy_failure() {
         let host = MockHost::new().with_process_result(1, vec![]);
-        let cfg = DeployConfig {
+        let cfg = DeployInput {
             host: "ssh://h".into(),
             compose_file: Some("c.yml".into()),
             ..Default::default()

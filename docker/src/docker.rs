@@ -17,7 +17,8 @@ pub fn exit_phrase(code: i32) -> String {
 }
 
 /// A branded failure for a non-zero exit: `"Failed to {action}: {exit_phrase}"`.
-pub fn fail(action: &str, code: i32) -> MiddlewareResult {
+/// Generic over the middleware's output type so it fits any `execute` return.
+pub fn fail<T>(action: &str, code: i32) -> MiddlewareResult<T> {
     MiddlewareResult::failure(format!("Failed to {action}: {}", exit_phrase(code)))
 }
 
@@ -46,7 +47,7 @@ mod tests {
 
     #[test]
     fn fail_wraps_action_and_exit_phrase() {
-        let w = fail("build and push image", 1).into_wit();
+        let w = fail::<NoOutput>("build and push image", 1).into_wit();
         assert!(!w.successful);
         assert_eq!(
             w.error_message.as_deref(),
