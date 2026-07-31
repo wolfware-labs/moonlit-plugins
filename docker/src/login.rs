@@ -6,7 +6,7 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct LoginConfig {
+pub struct LoginInput {
     /// Registry host to authenticate against. Omit for Docker Hub.
     pub registry: Option<String>,
     /// Registry username. Required.
@@ -21,25 +21,26 @@ pub struct Login;
 impl Middleware for Login {
     const NAME: &'static str = "login";
     const DESCRIPTION: &'static str = "authenticate to a Docker registry";
-    type Config = LoginConfig;
+    type Input = LoginInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: LoginConfig) -> MiddlewareResult {
-        if cfg.username.trim().is_empty() || cfg.password.trim().is_empty() {
+    fn execute(&self, ctx: &Context, input: Self::Input) -> MiddlewareResult<Self::Output> {
+        if input.username.trim().is_empty() || input.password.trim().is_empty() {
             return MiddlewareResult::failure(
                 "Docker login requires both username and password to be set.",
             );
         }
         let mut c = docker(ctx).arg("login");
-        if let Some(reg) = cfg.registry.as_deref().filter(|r| !r.trim().is_empty()) {
+        if let Some(reg) = input.registry.as_deref().filter(|r| !r.trim().is_empty()) {
             c = c.arg(reg);
         }
         c = c
             .arg("--username")
-            .arg(&cfg.username)
+            .arg(&input.username)
             .arg("--password-stdin")
-            .stdin(cfg.password);
+            .stdin(input.password);
         match c.stream(LineHandler::severity()) {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => fail("log in to Docker registry", o.exit_code),
             Err(e) => {
                 MiddlewareResult::failure(format!("Failed to log in to Docker registry: {e}"))
@@ -60,7 +61,7 @@ mod tests {
     #[test]
     fn blank_username_or_password_fails_before_spawn() {
         let host = MockHost::new();
-        let cfg = LoginConfig {
+        let cfg = LoginInput {
             username: "  ".into(),
             password: "pw".into(),
             ..Default::default()
@@ -76,7 +77,7 @@ mod tests {
     #[test]
     fn with_registry_builds_positional_and_feeds_password_stdin() {
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = LoginConfig {
+        let cfg = LoginInput {
             registry: Some("registry.example.com".into()),
             username: "u".into(),
             password: "secret".into(),
@@ -101,7 +102,7 @@ mod tests {
     #[test]
     fn blank_registry_is_omitted_docker_hub() {
         let host = MockHost::new().with_process_result(0, vec![]);
-        let cfg = LoginConfig {
+        let cfg = LoginInput {
             registry: Some("  ".into()),
             username: "u".into(),
             password: "p".into(),
@@ -114,7 +115,7 @@ mod tests {
     #[test]
     fn non_zero_exit_maps_to_login_failure() {
         let host = MockHost::new().with_process_result(1, vec![]);
-        let cfg = LoginConfig {
+        let cfg = LoginInput {
             username: "u".into(),
             password: "p".into(),
             ..Default::default()

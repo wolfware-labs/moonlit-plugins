@@ -43,5 +43,5 @@ Requires: `rustup target add wasm32-wasip2`. Verify with
   `environment` entries are exported as process environment variables on the spawned
   `docker compose` command alongside `DOCKER_HOST` (set from `host`), so they are
   visible to the compose file's variable substitution. `image` is accepted in
-  `DeployConfig` but is inert in MVP — it is not referenced by `execute`; matching
+  `DeployInput` but is inert in MVP — it is not referenced by `execute`; matching
   images to services is left to the compose file itself.

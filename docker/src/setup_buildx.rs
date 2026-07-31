@@ -8,7 +8,7 @@ use moonlit_sdk::process::LineHandler;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct SetupBuildxConfig {
+pub struct SetupBuildxInput {
     /// Name for the builder. Omit to let Docker generate one.
     pub name: Option<String>,
     /// Buildx driver to use. Defaults to "docker-container".
@@ -23,7 +23,7 @@ pub struct SetupBuildxConfig {
     pub platforms: Vec<String>,
 }
 
-impl Default for SetupBuildxConfig {
+impl Default for SetupBuildxInput {
     fn default() -> Self {
         Self {
             name: None,
@@ -36,16 +36,24 @@ impl Default for SetupBuildxConfig {
     }
 }
 
+/// Output published by `setup-buildx`: the builder name that was created.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct SetupBuildxOutput {
+    /// The buildx builder name (generated when not supplied).
+    pub name: String,
+}
+
 #[derive(Default)]
 pub struct SetupBuildx;
 
 impl Middleware for SetupBuildx {
     const NAME: &'static str = "setup-buildx";
     const DESCRIPTION: &'static str = "create a docker buildx builder";
-    type Config = SetupBuildxConfig;
+    type Input = SetupBuildxInput;
+    type Output = SetupBuildxOutput;
 
-    fn execute(&self, ctx: &Context, cfg: SetupBuildxConfig) -> MiddlewareResult {
-        let name = match cfg.name.as_deref().filter(|n| !n.trim().is_empty()) {
+    fn execute(&self, ctx: &Context, input: Self::Input) -> MiddlewareResult<Self::Output> {
+        let name = match input.name.as_deref().filter(|n| !n.trim().is_empty()) {
             Some(n) => n.to_string(),
             None => format!("moonlit-builder-{}", ctx.random().uuid()),
         };
@@ -55,22 +63,22 @@ impl Middleware for SetupBuildx {
             .arg("--name")
             .arg(&name)
             .arg("--driver")
-            .arg(&cfg.driver);
-        if cfg.bootstrap {
+            .arg(&input.driver);
+        if input.bootstrap {
             c = c.arg("--bootstrap");
         }
-        for p in &cfg.platforms {
+        for p in &input.platforms {
             c = c.arg("--platform").arg(p);
         }
-        if let Some(ep) = cfg.endpoint.as_deref().filter(|e| !e.trim().is_empty()) {
+        if let Some(ep) = input.endpoint.as_deref().filter(|e| !e.trim().is_empty()) {
             c = c.arg(ep);
         }
         match c.stream(LineHandler::severity()) {
             Ok(o) if o.success() => {
-                if cfg.set_builder_variable {
+                if input.set_builder_variable {
                     ctx.state::<DockerShared>().builder.set(Some(name.clone()));
                 }
-                MiddlewareResult::success_with(|o| o.set("name", name))
+                MiddlewareResult::ok(SetupBuildxOutput { name })
             }
             Ok(o) => fail("create buildx builder", o.exit_code),
             Err(e) => MiddlewareResult::failure(format!("Failed to create buildx builder: {e}")),
@@ -91,7 +99,7 @@ mod tests {
     fn explicit_name_builds_full_argv_in_order() {
         let host = MockHost::new().with_process_result(0, vec![]);
         let shared = DockerShared::default();
-        let cfg = SetupBuildxConfig {
+        let cfg = SetupBuildxInput {
             name: Some("mybuilder".into()),
             driver: "docker-container".into(),
             endpoint: Some("ssh://host".into()),
@@ -126,7 +134,7 @@ mod tests {
     fn bootstrap_false_omits_flag() {
         let host = MockHost::new().with_process_result(0, vec![]);
         let shared = DockerShared::default();
-        let cfg = SetupBuildxConfig {
+        let cfg = SetupBuildxInput {
             name: Some("b".into()),
             bootstrap: false,
             ..Default::default()
@@ -148,7 +156,7 @@ mod tests {
         let w = run(
             &SetupBuildx,
             &ctx(&host, &shared),
-            SetupBuildxConfig::default(),
+            SetupBuildxInput::default(),
         )
         .into_wit();
         assert!(w.successful);
@@ -167,7 +175,7 @@ mod tests {
     fn set_builder_variable_false_leaves_state_none() {
         let host = MockHost::new().with_process_result(0, vec![]);
         let shared = DockerShared::default();
-        let cfg = SetupBuildxConfig {
+        let cfg = SetupBuildxInput {
             name: Some("b".into()),
             set_builder_variable: false,
             ..Default::default()
@@ -180,7 +188,7 @@ mod tests {
     fn non_zero_exit_fails_without_state_or_output() {
         let host = MockHost::new().with_process_result(1, vec![]);
         let shared = DockerShared::default();
-        let cfg = SetupBuildxConfig {
+        let cfg = SetupBuildxInput {
             name: Some("b".into()),
             ..Default::default()
         };

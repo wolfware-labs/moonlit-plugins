@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct BuildAndPushConfig {
+pub struct BuildAndPushInput {
     /// Buildx builder to use. Omit to use the one recorded by `setup-buildx` (or the default).
     pub builder: Option<String>,
     /// Image tags to apply (e.g. "myrepo/app:1.2.0").
@@ -36,7 +36,7 @@ pub struct BuildAndPushConfig {
     pub cache_to: Vec<String>,
 }
 
-impl Default for BuildAndPushConfig {
+impl Default for BuildAndPushInput {
     fn default() -> Self {
         Self {
             builder: None,
@@ -59,7 +59,7 @@ impl Default for BuildAndPushConfig {
 pub struct BuildAndPush;
 
 /// Builder resolution: explicit config → shared state → env var. First non-blank wins.
-fn resolve_builder(ctx: &Context, cfg: &BuildAndPushConfig) -> Option<String> {
+fn resolve_builder(ctx: &Context, cfg: &BuildAndPushInput) -> Option<String> {
     if let Some(b) = cfg.builder.as_deref().filter(|b| !b.trim().is_empty()) {
         return Some(b.to_string());
     }
@@ -79,44 +79,45 @@ fn resolve_builder(ctx: &Context, cfg: &BuildAndPushConfig) -> Option<String> {
 impl Middleware for BuildAndPush {
     const NAME: &'static str = "build-and-push";
     const DESCRIPTION: &'static str = "build a docker image and push or load it";
-    type Config = BuildAndPushConfig;
+    type Input = BuildAndPushInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: BuildAndPushConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, input: Self::Input) -> MiddlewareResult<Self::Output> {
         let mut c = docker(ctx).arg("build");
-        if let Some(b) = resolve_builder(ctx, &cfg) {
+        if let Some(b) = resolve_builder(ctx, &input) {
             c = c.arg("--builder").arg(b);
         }
-        for t in &cfg.tags {
+        for t in &input.tags {
             c = c.arg("--tag").arg(t);
         }
-        if let Some(f) = cfg.file.as_deref().filter(|f| !f.trim().is_empty()) {
+        if let Some(f) = input.file.as_deref().filter(|f| !f.trim().is_empty()) {
             c = c.arg("--file").arg(f);
         }
-        for a in &cfg.build_args {
+        for a in &input.build_args {
             c = c.arg("--build-arg").arg(a);
         }
-        for (k, v) in &cfg.labels {
+        for (k, v) in &input.labels {
             c = c.arg("--label").arg(format!("{k}={v}"));
         }
-        if !cfg.platforms.is_empty() {
-            c = c.arg("--platform").arg(cfg.platforms.join(","));
+        if !input.platforms.is_empty() {
+            c = c.arg("--platform").arg(input.platforms.join(","));
         }
-        if cfg.no_cache {
+        if input.no_cache {
             c = c.arg("--no-cache");
         }
-        for cf in &cfg.cache_from {
+        for cf in &input.cache_from {
             c = c.arg("--cache-from").arg(cf);
         }
-        for ct in &cfg.cache_to {
+        for ct in &input.cache_to {
             c = c.arg("--cache-to").arg(ct);
         }
-        if cfg.pull {
+        if input.pull {
             c = c.arg("--pull");
         }
-        c = c.arg(if cfg.push { "--push" } else { "--load" });
-        c = c.arg(&cfg.context);
+        c = c.arg(if input.push { "--push" } else { "--load" });
+        c = c.arg(&input.context);
         match c.stream(LineHandler::severity()) {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => fail("build and push image", o.exit_code),
             Err(e) => MiddlewareResult::failure(format!("Failed to build and push image: {e}")),
         }
@@ -139,7 +140,7 @@ mod tests {
         let mut labels = BTreeMap::new();
         labels.insert("z".into(), "1".into());
         labels.insert("a".into(), "2".into()); // BTreeMap sorts -> a then z
-        let cfg = BuildAndPushConfig {
+        let cfg = BuildAndPushInput {
             builder: Some("b1".into()),
             tags: vec!["img:1".into(), "img:latest".into()],
             file: Some("Dockerfile".into()),
@@ -193,7 +194,7 @@ mod tests {
     fn push_false_uses_load_and_default_context_dot() {
         let host = MockHost::new().with_process_result(0, vec![]);
         let shared = DockerShared::default();
-        let cfg = BuildAndPushConfig {
+        let cfg = BuildAndPushInput {
             push: false,
             ..Default::default()
         };
@@ -213,7 +214,7 @@ mod tests {
         let _ = run(
             &BuildAndPush,
             &ctx(&host, &shared),
-            BuildAndPushConfig::default(),
+            BuildAndPushInput::default(),
         );
         let args = &host.recorded_commands()[0].args;
         let i = args.iter().position(|a| a == "--builder").unwrap();
@@ -229,7 +230,7 @@ mod tests {
         let _ = run(
             &BuildAndPush,
             &ctx(&host, &shared),
-            BuildAndPushConfig::default(),
+            BuildAndPushInput::default(),
         );
         let args = &host.recorded_commands()[0].args;
         let i = args.iter().position(|a| a == "--builder").unwrap();
@@ -243,7 +244,7 @@ mod tests {
         let _ = run(
             &BuildAndPush,
             &ctx(&host, &shared),
-            BuildAndPushConfig::default(),
+            BuildAndPushInput::default(),
         );
         assert!(!host.recorded_commands()[0]
             .args
@@ -258,7 +259,7 @@ mod tests {
         let w = run(
             &BuildAndPush,
             &ctx(&host, &shared),
-            BuildAndPushConfig::default(),
+            BuildAndPushInput::default(),
         )
         .into_wit();
         assert_eq!(
