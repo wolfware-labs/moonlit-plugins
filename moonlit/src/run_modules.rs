@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct RunModulesConfig {
+pub struct RunModulesInput {
     /// Module pipelines to run: each a directory or a `.yml`/`.yaml` file path.
     pub module_paths: Vec<String>,
     /// Stages to run within each module. Empty runs the module's default stages.
@@ -29,12 +29,20 @@ fn split_path(path: &str) -> (&str, Option<&str>) {
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct ModuleResult {
     module: String,
     successful: bool,
     duration_ms: u64,
+}
+
+/// Output published by `run-modules`: one result per module plus the failure tally.
+#[derive(Serialize, schemars::JsonSchema)]
+pub struct RunModulesOutput {
+    results: Vec<ModuleResult>,
+    #[serde(rename = "failedCount")]
+    failed_count: u32,
 }
 
 #[derive(Default)]
@@ -43,15 +51,16 @@ pub struct RunModules;
 impl Middleware for RunModules {
     const NAME: &'static str = "run-modules";
     const DESCRIPTION: &'static str = "run nested Moonlit release files as modules";
-    type Config = RunModulesConfig;
+    type Input = RunModulesInput;
+    type Output = RunModulesOutput;
 
-    fn execute(&self, ctx: &Context, cfg: RunModulesConfig) -> MiddlewareResult {
-        if cfg.module_paths.is_empty() {
+    fn execute(&self, ctx: &Context, input: Self::Input) -> MiddlewareResult<Self::Output> {
+        if input.module_paths.is_empty() {
             return MiddlewareResult::failure("No module paths provided for run-modules.");
         }
-        let mut results = Vec::with_capacity(cfg.module_paths.len());
+        let mut results = Vec::with_capacity(input.module_paths.len());
         let mut failed_count: u32 = 0;
-        for path in &cfg.module_paths {
+        for path in &input.module_paths {
             let (dir, file) = split_path(path);
             let timer = ctx.clock().start();
             let mut cmd = ctx
@@ -64,10 +73,10 @@ impl Middleware for RunModules {
                 cmd = cmd.arg("-f").arg(f);
             }
             cmd = cmd.arg("--output").arg("plain");
-            for s in &cfg.stages {
+            for s in &input.stages {
                 cmd = cmd.arg("-s").arg(s);
             }
-            for (k, v) in &cfg.arguments {
+            for (k, v) in &input.arguments {
                 cmd = cmd.arg("-a").arg(format!("{k}={v}"));
             }
             let out = match cmd.stream(LineHandler::severity()) {
@@ -83,7 +92,7 @@ impl Middleware for RunModules {
             });
             if !successful {
                 failed_count += 1;
-                if !cfg.continue_on_module_error {
+                if !input.continue_on_module_error {
                     return MiddlewareResult::failure(format!(
                         "Module '{path}' failed with exit code {}.",
                         out.exit_code
@@ -91,9 +100,9 @@ impl Middleware for RunModules {
                 }
             }
         }
-        MiddlewareResult::success_with(|o| {
-            o.set("results", &results);
-            o.set("failedCount", failed_count);
+        MiddlewareResult::ok(RunModulesOutput {
+            results,
+            failed_count,
         })
     }
 }
@@ -139,7 +148,7 @@ mod tests {
     fn empty_module_paths_fails_before_any_spawn() {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/w".into(), "modules".into());
-        let cfg = RunModulesConfig::default(); // module_paths empty
+        let cfg = RunModulesInput::default(); // module_paths empty
         let r = run(&RunModules, &ctx, cfg);
         assert!(!r.is_success());
         assert_eq!(
@@ -155,7 +164,7 @@ mod tests {
             .with_process_result(0, vec![ok_line("done")])
             .with_clock(&[0, 1_000_000]);
         let ctx = Context::new(&host, "/repo".into(), "modules".into());
-        let mut cfg = RunModulesConfig {
+        let mut cfg = RunModulesInput {
             module_paths: vec!["modules/foo/release.yml".to_string()],
             stages: vec!["release".to_string()],
             ..Default::default()
@@ -191,7 +200,7 @@ mod tests {
             .with_process_result(0, vec![ok_line("done")])
             .with_clock(&[0, 0]);
         let ctx = Context::new(&host, "/repo".into(), "modules".into());
-        let cfg = RunModulesConfig {
+        let cfg = RunModulesInput {
             module_paths: vec!["modules/foo".to_string()],
             ..Default::default()
         };
@@ -211,7 +220,7 @@ mod tests {
             .with_process_result(0, vec![ok_line("never")])
             .with_clock(&[0, 1, 0, 1]);
         let ctx = Context::new(&host, "/repo".into(), "modules".into());
-        let cfg = RunModulesConfig {
+        let cfg = RunModulesInput {
             module_paths: vec!["a".to_string(), "b".to_string(), "c".to_string()],
             ..Default::default()
         };
@@ -236,7 +245,7 @@ mod tests {
             .with_process_result(0, vec![ok_line("ok")])
             .with_clock(&[0, 5_000_000, 0, 1_000_000, 0, 2_000_000]);
         let ctx = Context::new(&host, "/repo".into(), "modules".into());
-        let cfg = RunModulesConfig {
+        let cfg = RunModulesInput {
             module_paths: vec!["a".to_string(), "b".to_string(), "c".to_string()],
             continue_on_module_error: true,
             ..Default::default()
