@@ -5,14 +5,14 @@ use moonlit_sdk::prelude::*;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct PushConfig {
+pub struct PushInput {
     /// Name of the remote to push to. Defaults to "origin".
     remote: String,
     /// Also push tags after the branch. Defaults to true.
     push_tags: bool,
 }
 
-impl Default for PushConfig {
+impl Default for PushInput {
     fn default() -> Self {
         Self {
             remote: "origin".to_string(),
@@ -27,9 +27,10 @@ pub struct Push;
 impl Middleware for Push {
     const NAME: &'static str = "push";
     const DESCRIPTION: &'static str = "push the current branch and tags to a remote";
-    type Config = PushConfig;
+    type Input = PushInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: PushConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(f) = ensure_repo(ctx) {
             return f;
         }
@@ -55,7 +56,7 @@ impl Middleware for Push {
             Ok(o) if o.success()
         );
 
-        let mut result = MiddlewareResult::success();
+        let mut result = MiddlewareResult::ok(NoOutput {});
         if !has_upstream {
             result = result.with_warning("current branch has no upstream configured");
         }
@@ -75,8 +76,9 @@ impl Middleware for Push {
     }
 }
 
-/// Run one `git push …`; classify auth failures into a helpful hint.
-fn run_push(ctx: &Context, args: &[&str]) -> Result<(), MiddlewareResult> {
+/// Run one `git push …`; classify auth failures into a helpful hint. Generic
+/// over the caller's output type so the `Err` fits any `execute` return.
+fn run_push<T>(ctx: &Context, args: &[&str]) -> Result<(), MiddlewareResult<T>> {
     match git(ctx).args(args.iter().copied()).run() {
         Ok(o) if o.success() => Ok(()),
         Ok(o) => {
@@ -127,7 +129,7 @@ mod tests {
             .with_process_result(0, vec![]) // push HEAD
             .with_process_result(0, vec![]); // push --tags
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let result = run(&Push, &ctx, PushConfig::default());
+        let result = run(&Push, &ctx, PushInput::default());
         assert!(result.is_success());
         assert!(result.warnings().is_empty());
         let cmds = host.recorded_commands();
@@ -147,7 +149,7 @@ mod tests {
             .with_process_result(0, vec![out(".git")])
             .with_process_result(2, vec![]); // remote get-url fails
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let cfg = PushConfig {
+        let cfg = PushInput {
             remote: "upstream".to_string(),
             ..Default::default()
         };
@@ -168,7 +170,7 @@ mod tests {
             .with_process_result(0, vec![]) // push HEAD
             .with_process_result(0, vec![]); // push --tags
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let result = run(&Push, &ctx, PushConfig::default());
+        let result = run(&Push, &ctx, PushInput::default());
         assert!(result.is_success());
         assert_eq!(
             result.warnings(),
@@ -184,7 +186,7 @@ mod tests {
             .with_process_result(0, vec![out("origin/main")])
             .with_process_result(0, vec![]); // push HEAD only
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let cfg = PushConfig {
+        let cfg = PushInput {
             push_tags: false,
             ..Default::default()
         };
@@ -203,7 +205,7 @@ mod tests {
                 vec![err("git@github.com: Permission denied (publickey).")],
             );
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let w = run(&Push, &ctx, PushConfig::default()).into_wit();
+        let w = run(&Push, &ctx, PushInput::default()).into_wit();
         assert!(!w.successful);
         assert!(w
             .error_message

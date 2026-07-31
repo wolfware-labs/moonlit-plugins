@@ -5,7 +5,7 @@ use moonlit_sdk::prelude::*;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct TagConfig {
+pub struct TagInput {
     /// Name of the tag to create (e.g. "v1.2.0"). Required.
     tag_name: String,
     /// Annotation message. When set, creates an annotated tag instead of a lightweight one.
@@ -18,9 +18,10 @@ pub struct Tag;
 impl Middleware for Tag {
     const NAME: &'static str = "tag";
     const DESCRIPTION: &'static str = "create a lightweight or annotated tag";
-    type Config = TagConfig;
+    type Input = TagInput;
+    type Output = NoOutput;
 
-    fn execute(&self, ctx: &Context, cfg: TagConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if cfg.tag_name.trim().is_empty() {
             return MiddlewareResult::failure("Tag name cannot be empty.");
         }
@@ -37,7 +38,7 @@ impl Middleware for Tag {
             .run()
         {
             Ok(o) if o.success() && !o.stdout().trim().is_empty() => {
-                return MiddlewareResult::success()
+                return MiddlewareResult::ok(NoOutput {})
                     .with_warning(format!("Tag '{}' already exists.", cfg.tag_name));
             }
             Ok(_) => {}
@@ -60,7 +61,7 @@ impl Middleware for Tag {
                 .run(),
         };
         match created {
-            Ok(o) if o.success() => MiddlewareResult::success(),
+            Ok(o) if o.success() => MiddlewareResult::ok(NoOutput {}),
             Ok(o) => MiddlewareResult::failure(format!(
                 "Git command failed with exit code {}",
                 o.exit_code
@@ -87,7 +88,7 @@ mod tests {
     fn blank_name_fails_before_touching_git() {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let cfg = TagConfig {
+        let cfg = TagInput {
             tag_name: "   ".to_string(),
             ..Default::default()
         };
@@ -106,7 +107,7 @@ mod tests {
             .with_process_result(0, vec![out(".git")]) // ensure_repo
             .with_process_result(0, vec![out("v1.0.0")]); // tag -l finds it
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let cfg = TagConfig {
+        let cfg = TagInput {
             tag_name: "v1.0.0".to_string(),
             ..Default::default()
         };
@@ -125,7 +126,7 @@ mod tests {
             .with_process_result(0, vec![]) // tag -l: not found
             .with_process_result(0, vec![]); // tag <name>
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let cfg = TagConfig {
+        let cfg = TagInput {
             tag_name: "v2.0.0".to_string(),
             ..Default::default()
         };
@@ -141,7 +142,7 @@ mod tests {
             .with_process_result(0, vec![]) // tag -l: not found
             .with_process_result(0, vec![]); // tag -a ...
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let cfg = TagConfig {
+        let cfg = TagInput {
             tag_name: "v2.0.0".to_string(),
             message: Some("release 2.0.0".to_string()),
         };
@@ -169,7 +170,7 @@ mod tests {
             .with_process_result(0, vec![]) // tag -l: not found
             .with_process_result(0, vec![]); // tag <name>
         let ctx = Context::new(&host, "/repo".into(), "s".into());
-        let cfg = TagConfig {
+        let cfg = TagInput {
             tag_name: "-d".to_string(),
             ..Default::default()
         };

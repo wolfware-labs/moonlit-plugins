@@ -6,7 +6,7 @@ use regex::RegexBuilder;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct LatestTagConfig {
+pub struct LatestTagInput {
     /// Text stripped from the front of a matched tag before the version (e.g. "v").
     prefix: String,
     /// Text stripped from the end of a matched tag after the version.
@@ -15,7 +15,7 @@ pub struct LatestTagConfig {
     pattern: String,
 }
 
-impl Default for LatestTagConfig {
+impl Default for LatestTagInput {
     fn default() -> Self {
         // Manual Default so a missing `pattern` takes the 1.x default rather than
         // the empty string `#[derive(Default)]` would give.
@@ -27,15 +27,28 @@ impl Default for LatestTagConfig {
     }
 }
 
+/// Output published by `latest-tag`. All fields are absent when no tag matched
+/// (that path returns an empty output with a warning), so each is optional.
+#[derive(Serialize, Default, schemars::JsonSchema)]
+pub struct LatestTagOutput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "fullName")]
+    full_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "commitSha")]
+    commit_sha: Option<String>,
+}
+
 #[derive(Default)]
 pub struct LatestTag;
 
 impl Middleware for LatestTag {
     const NAME: &'static str = "latest-tag";
     const DESCRIPTION: &'static str = "newest tag matching a pattern (stores its commit SHA)";
-    type Config = LatestTagConfig;
+    type Input = LatestTagInput;
+    type Output = LatestTagOutput;
 
-    fn execute(&self, ctx: &Context, cfg: LatestTagConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         if let Err(f) = ensure_repo(ctx) {
             return f;
         }
@@ -89,14 +102,14 @@ impl Middleware for LatestTag {
                 .latest_tag_sha
                 .set(Some(commit_sha.clone()));
 
-            return MiddlewareResult::success_with(|o| {
-                o.set("name", name);
-                o.set("fullName", full_name);
-                o.set("commitSha", commit_sha);
+            return MiddlewareResult::ok(LatestTagOutput {
+                name: Some(name),
+                full_name: Some(full_name),
+                commit_sha: Some(commit_sha),
             });
         }
 
-        MiddlewareResult::success().with_warning("No matching tags found.")
+        MiddlewareResult::ok(LatestTagOutput::default()).with_warning("No matching tags found.")
     }
 }
 
@@ -125,7 +138,7 @@ mod tests {
             );
         let shared = GitShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let cfg = LatestTagConfig {
+        let cfg = LatestTagInput {
             prefix: "v".to_string(),
             ..Default::default()
         };
@@ -157,7 +170,7 @@ mod tests {
             );
         let shared = GitShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let w = run(&LatestTag, &ctx, LatestTagConfig::default()).into_wit();
+        let w = run(&LatestTag, &ctx, LatestTagInput::default()).into_wit();
         assert!(w.successful);
         let map: std::collections::HashMap<_, _> = w.output.into_iter().collect();
         assert_eq!(
@@ -173,7 +186,7 @@ mod tests {
             .with_process_result(0, vec![out("release-candidate zzzz ")]);
         let shared = GitShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let result = run(&LatestTag, &ctx, LatestTagConfig::default());
+        let result = run(&LatestTag, &ctx, LatestTagInput::default());
         assert!(result.is_success());
         assert_eq!(result.warnings(), &["No matching tags found.".to_string()]);
         assert!(result.into_wit().output.is_empty());
@@ -185,7 +198,7 @@ mod tests {
         let host = MockHost::new().with_process_result(0, vec![out(".git")]);
         let shared = GitShared::default();
         let ctx = Context::new(&host, "/repo".into(), "s".into()).with_state(&shared);
-        let cfg = LatestTagConfig {
+        let cfg = LatestTagInput {
             pattern: "[".to_string(),
             ..Default::default()
         };
