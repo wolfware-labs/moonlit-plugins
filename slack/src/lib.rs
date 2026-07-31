@@ -12,6 +12,7 @@ use send_notification::SendNotification;
 
 moonlit_plugin! {
     name: "slack",
+    icon: "icon.png",
     config: SlackPluginConfig,
     middlewares: [SendNotification],
 }

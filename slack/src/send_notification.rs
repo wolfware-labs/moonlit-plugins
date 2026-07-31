@@ -5,10 +5,12 @@ use crate::api;
 use crate::config::SlackPluginConfig;
 use moonlit_sdk::prelude::*;
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct SendNotificationConfig {
+    /// Slack channel to post to (name like "#releases" or a channel ID). Required.
     pub channel: String,
+    /// Plain-text message body to send. Required.
     pub message: String,
 }
 
