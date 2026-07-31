@@ -1,13 +1,22 @@
 //! generate-changelog — structured changelog categories, with optional AI filter/refine.
 
+use moonlit_sdk::changelog::Category;
 use moonlit_sdk::prelude::*;
 
 use crate::changelog::ChangelogGeneratorConfig;
 use crate::models::{ConventionalCommit, SrShared};
 
+/// Output published by `generate-changelog`: the structured categories. Absent
+/// when there are no commits to summarize (that path returns an empty output).
+#[derive(Serialize, Default, schemars::JsonSchema)]
+pub struct GenerateChangelogOutput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    categories: Option<Vec<Category>>,
+}
+
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
-pub struct GenerateChangelogConfig {
+pub struct GenerateChangelogInput {
     /// Commits to include. Omit to use the commits stored by the `analyze` step.
     commits: Option<Vec<ConventionalCommit>>,
     /// Use AI to drop commits that are not user-facing. Requires the plugin `ai` config. Defaults to false.
@@ -24,9 +33,10 @@ pub struct GenerateChangelog;
 impl Middleware for GenerateChangelog {
     const NAME: &'static str = "generate-changelog";
     const DESCRIPTION: &'static str = "generate structured changelog categories from commits";
-    type Config = GenerateChangelogConfig;
+    type Input = GenerateChangelogInput;
+    type Output = GenerateChangelogOutput;
 
-    fn execute(&self, ctx: &Context, cfg: GenerateChangelogConfig) -> MiddlewareResult {
+    fn execute(&self, ctx: &Context, cfg: Self::Input) -> MiddlewareResult<Self::Output> {
         let want_ai = cfg.filter_non_user_facing_commits || cfg.refine_commits_summary;
 
         let mut commits = cfg
@@ -35,7 +45,7 @@ impl Middleware for GenerateChangelog {
             .unwrap_or_else(|| ctx.state::<SrShared>().commits.get());
         if commits.is_empty() {
             ctx.log_warn("No commits provided for changelog generation.");
-            return MiddlewareResult::success();
+            return MiddlewareResult::ok(GenerateChangelogOutput::default());
         }
 
         if want_ai {
@@ -63,8 +73,8 @@ impl Middleware for GenerateChangelog {
         }
 
         let categories = cfg.changelog_rules.generate(&commits);
-        MiddlewareResult::success_with(move |o| {
-            o.set("categories", categories);
+        MiddlewareResult::ok(GenerateChangelogOutput {
+            categories: Some(categories),
         })
     }
 }
@@ -76,7 +86,7 @@ mod tests {
     use moonlit_sdk::LogLevel;
     use serde_json::Value;
 
-    fn cfg(json: Value) -> GenerateChangelogConfig {
+    fn cfg(json: Value) -> GenerateChangelogInput {
         moonlit_sdk::config::from_json_value(&json.to_string()).unwrap()
     }
     fn sr_cfg(json: Value) -> crate::config::SrPluginConfig {
@@ -86,7 +96,7 @@ mod tests {
         shared: &SrShared,
         host: &MockHost,
         pc: &crate::config::SrPluginConfig,
-        c: GenerateChangelogConfig,
+        c: GenerateChangelogInput,
     ) -> moonlit_sdk::bindings::MiddlewareResult {
         let ctx = Context::new(host, "/w".into(), "s".into())
             .with_state(shared)
@@ -182,7 +192,7 @@ mod tests {
         let shared = SrShared::default();
         let host = MockHost::new();
         let pc = sr_cfg(serde_json::json!({}));
-        let w = run_with_config(&shared, &host, &pc, GenerateChangelogConfig::default());
+        let w = run_with_config(&shared, &host, &pc, GenerateChangelogInput::default());
         assert!(w.successful);
         assert!(w.output.is_empty());
         assert!(host
@@ -203,7 +213,7 @@ mod tests {
         }]);
         let host = MockHost::new();
         let pc = sr_cfg(serde_json::json!({}));
-        let w = run_with_config(&shared, &host, &pc, GenerateChangelogConfig::default());
+        let w = run_with_config(&shared, &host, &pc, GenerateChangelogInput::default());
         assert!(w.successful);
         let out: std::collections::HashMap<String, Value> = w
             .output

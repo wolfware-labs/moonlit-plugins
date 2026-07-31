@@ -12,7 +12,7 @@ name = "semantic_release"
 crate-type = ["cdylib"]
 
 [dependencies]
-moonlit-sdk = "0.2"
+moonlit-sdk = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1"
@@ -22,7 +22,7 @@ globset = "0.4"
 chrono = { version = "0.4", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-moonlit-engine = { git = "https://github.com/wolfware-labs/moonlit", rev = "eb52466a659015335d3e2fa9286db7b29e820927" }
+moonlit-engine = { git = "https://github.com/wolfware-labs/moonlit", rev = "4262dfce5148676f8bc12ff7c0e282ae9ce1d4cd" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tempfile = "3"
 assert_cmd = "2"
