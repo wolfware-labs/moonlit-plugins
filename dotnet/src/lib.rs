@@ -20,6 +20,7 @@ use test::Test;
 
 moonlit_plugin! {
     name: "dotnet",
+    icon: "icon.png",
     config: DotnetConfig,
     middlewares: [Build, Pack, Push, Test],
 }

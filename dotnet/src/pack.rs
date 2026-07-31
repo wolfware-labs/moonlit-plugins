@@ -40,17 +40,26 @@ fn selected_package(out_dir: &Path, out_rel: &str) -> Result<(String, Option<Str
     Ok((path, warning))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PackConfig {
+    /// Project or solution file to pack. Defaults to the one in the working directory.
     pub project: String,
+    /// SemVer used to derive assembly and package metadata when specific versions are unset.
     pub version: Option<String>,
+    /// Explicit assembly version. Overrides the value derived from `version`.
     pub assembly_version: Option<String>,
+    /// Explicit file version. Overrides the value derived from `version`.
     pub file_version: Option<String>,
+    /// Explicit informational version. Overrides the value derived from `version`.
     pub informational_version: Option<String>,
+    /// Explicit NuGet package version. Overrides the value derived from `version`.
     pub package_version: Option<String>,
+    /// Build configuration. Defaults to "Release".
     pub configuration: String,
+    /// Pack without building first (reuse existing build output). Defaults to false.
     pub no_build: bool,
+    /// Skip the implicit restore before packing. Defaults to false.
     pub no_restore: bool,
 }
 
