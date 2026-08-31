@@ -8,7 +8,9 @@ use moonlit_engine::host::{
     HostEventSink, InstanceConfig, LogLevel, PluginInstance, ReleaseContext,
 };
 
-const FIXTURE: &[u8] = include_bytes!("fixtures/moonlit.wasm");
+fn fixture() -> Vec<u8> {
+    moonlit_plugin_test_support::component_bytes("moonlit")
+}
 
 struct NullSink;
 impl HostEventSink for NullSink {
@@ -41,7 +43,7 @@ fn ctx(workdir: &std::path::Path, step: &str) -> ReleaseContext {
 async fn empty_module_paths_fails_before_spawn() {
     let dir = tempfile::tempdir().unwrap();
     let eng = moonlit_engine::host::test_engine();
-    let mut p = PluginInstance::instantiate(&eng, FIXTURE, cfg(dir.path()), Arc::new(NullSink))
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), cfg(dir.path()), Arc::new(NullSink))
         .await
         .expect("instantiates");
     p.init(&serde_json::json!({})).await.expect("init ok");

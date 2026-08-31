@@ -10,7 +10,9 @@ use moonlit_engine::host::{
     HostEventSink, InstanceConfig, LogLevel, PluginInstance, ReleaseContext,
 };
 
-const FIXTURE: &[u8] = include_bytes!("fixtures/git.wasm");
+fn fixture() -> Vec<u8> {
+    moonlit_plugin_test_support::component_bytes("git")
+}
 
 struct NullSink;
 impl HostEventSink for NullSink {
@@ -74,7 +76,7 @@ fn ctx(repo: &Path, step: &str) -> ReleaseContext {
 
 async fn instance(repo: &Path) -> PluginInstance {
     let eng = moonlit_engine::host::test_engine();
-    let mut p = PluginInstance::instantiate(&eng, FIXTURE, cfg(repo), Arc::new(NullSink))
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), cfg(repo), Arc::new(NullSink))
         .await
         .expect("git plugin instantiates");
     p.init(&serde_json::json!({})).await.expect("init Ok");

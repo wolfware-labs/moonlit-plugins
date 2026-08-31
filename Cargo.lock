@@ -1800,6 +1800,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "schemars",
  "serde",
@@ -1815,6 +1816,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "regex",
  "schemars",
@@ -1831,6 +1833,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "regex",
  "schemars",
@@ -1847,6 +1850,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "regex",
  "schemars",
@@ -1863,6 +1867,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "regex",
  "schemars",
@@ -1879,6 +1884,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "schemars",
  "serde",
@@ -1894,6 +1900,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "schemars",
  "serde",
@@ -1911,6 +1918,7 @@ dependencies = [
  "globset",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "regex",
  "schemars",
@@ -1928,6 +1936,7 @@ dependencies = [
  "assert_cmd",
  "moonlit-engine",
  "moonlit-pdk",
+ "moonlit-plugin-test-support",
  "predicates",
  "schemars",
  "serde",
@@ -1935,6 +1944,10 @@ dependencies = [
  "tempfile",
  "tokio",
 ]
+
+[[package]]
+name = "moonlit-plugin-test-support"
+version = "0.1.0"
 
 [[package]]
 name = "normalize-line-endings"

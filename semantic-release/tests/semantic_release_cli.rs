@@ -5,7 +5,6 @@
 //! and exits successfully.
 
 use std::fs;
-use std::path::Path;
 
 use assert_cmd::Command;
 use tempfile::tempdir;
@@ -21,11 +20,7 @@ fn moonlit() -> Command {
 }
 
 fn wasm_url() -> String {
-    let p = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/semantic-release.wasm")
-        .canonicalize()
-        .expect("semantic-release.wasm fixture exists");
-    format!("file://{}", p.display())
+    moonlit_plugin_test_support::component_url("semantic-release")
 }
 
 #[test]

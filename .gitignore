@@ -1,3 +1,9 @@
 /target
 **/target
 **/*.rs.bk
+
+# Built plugin components. The CLI end-to-end tests read them from
+# target/wasm32-wasip2/release/ (see test-support); committing copies meant
+# shipping 11 MB of artifacts that silently went stale against the SDK they
+# were built from.
+**/tests/fixtures/*.wasm

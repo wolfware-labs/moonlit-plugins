@@ -8,7 +8,9 @@ use moonlit_engine::host::{
     HostEventSink, InstanceConfig, LogLevel, PluginInstance, ReleaseContext,
 };
 
-const FIXTURE: &[u8] = include_bytes!("fixtures/semantic-release.wasm");
+fn fixture() -> Vec<u8> {
+    moonlit_plugin_test_support::component_bytes("semantic-release")
+}
 
 struct NullSink;
 impl HostEventSink for NullSink {
@@ -39,7 +41,7 @@ fn ctx(workdir: &std::path::Path, step: &str) -> ReleaseContext {
 
 async fn instance(dir: &std::path::Path) -> PluginInstance {
     let eng = moonlit_engine::host::test_engine();
-    let mut p = PluginInstance::instantiate(&eng, FIXTURE, cfg(dir), Arc::new(NullSink))
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), cfg(dir), Arc::new(NullSink))
         .await
         .expect("instantiates");
     // No plugin config for this plugin; init with an empty object.

@@ -18,6 +18,7 @@ serde_json = "1"
 schemars = "1"
 
 [dev-dependencies]
+moonlit-plugin-test-support = { path = "../test-support" }
 tempfile = "3"
 moonlit-engine = { git = "https://github.com/wolfware-labs/moonlit", rev = "4262dfce5148676f8bc12ff7c0e282ae9ce1d4cd" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

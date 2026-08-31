@@ -8,7 +8,9 @@ use moonlit_engine::host::{
     HostEventSink, InstanceConfig, LogLevel, PluginInstance, ReleaseContext,
 };
 
-const FIXTURE: &[u8] = include_bytes!("fixtures/gitlab.wasm");
+fn fixture() -> Vec<u8> {
+    moonlit_plugin_test_support::component_bytes("gitlab")
+}
 
 struct NullSink;
 impl HostEventSink for NullSink {
@@ -41,7 +43,7 @@ fn ctx(workdir: &std::path::Path, step: &str) -> ReleaseContext {
 async fn blank_token_fails_init_with_exact_message() {
     let dir = tempfile::tempdir().unwrap();
     let eng = moonlit_engine::host::test_engine();
-    let mut p = PluginInstance::instantiate(&eng, FIXTURE, cfg(dir.path()), Arc::new(NullSink))
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), cfg(dir.path()), Arc::new(NullSink))
         .await
         .expect("instantiates");
     match p.init(&serde_json::json!({ "token": "" })).await {
@@ -54,7 +56,7 @@ async fn blank_token_fails_init_with_exact_message() {
 async fn empty_related_items_succeeds() {
     let dir = tempfile::tempdir().unwrap();
     let eng = moonlit_engine::host::test_engine();
-    let mut p = PluginInstance::instantiate(&eng, FIXTURE, cfg(dir.path()), Arc::new(NullSink))
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), cfg(dir.path()), Arc::new(NullSink))
         .await
         .expect("instantiates");
     p.init(&serde_json::json!({ "token": "dummy" }))
@@ -79,7 +81,7 @@ async fn empty_related_items_succeeds() {
 async fn write_variables_appends_dotenv_file() {
     let dir = tempfile::tempdir().unwrap();
     let eng = moonlit_engine::host::test_engine();
-    let mut p = PluginInstance::instantiate(&eng, FIXTURE, cfg(dir.path()), Arc::new(NullSink))
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), cfg(dir.path()), Arc::new(NullSink))
         .await
         .expect("instantiates");
     p.init(&serde_json::json!({ "token": "dummy" }))

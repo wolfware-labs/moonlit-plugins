@@ -5,7 +5,6 @@
 //! and needs no .NET SDK — asserting the CLI surfaces the frozen failure and exits non-zero.
 
 use std::fs;
-use std::path::Path;
 
 use assert_cmd::Command;
 use predicates::str::contains;
@@ -22,11 +21,7 @@ fn moonlit() -> Command {
 }
 
 fn wasm_url() -> String {
-    let p = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/dotnet.wasm")
-        .canonicalize()
-        .expect("dotnet.wasm fixture exists");
-    format!("file://{}", p.display())
+    moonlit_plugin_test_support::component_url("dotnet")
 }
 
 #[test]

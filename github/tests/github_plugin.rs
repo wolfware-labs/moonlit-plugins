@@ -8,7 +8,9 @@ use moonlit_engine::host::{
     HostEventSink, InstanceConfig, LogLevel, PluginInstance, ReleaseContext,
 };
 
-const FIXTURE: &[u8] = include_bytes!("fixtures/github.wasm");
+fn fixture() -> Vec<u8> {
+    moonlit_plugin_test_support::component_bytes("github")
+}
 
 struct NullSink;
 impl HostEventSink for NullSink {
@@ -41,10 +43,14 @@ fn ctx(workdir: &std::path::Path, step: &str) -> ReleaseContext {
 async fn blank_token_fails_init_with_exact_message() {
     let dir = tempfile::tempdir().unwrap();
     let eng = moonlit_engine::host::test_engine();
-    let mut p =
-        PluginInstance::instantiate(&eng, FIXTURE, cfg(dir.path(), vec![]), Arc::new(NullSink))
-            .await
-            .expect("instantiates");
+    let mut p = PluginInstance::instantiate(
+        &eng,
+        &fixture(),
+        cfg(dir.path(), vec![]),
+        Arc::new(NullSink),
+    )
+    .await
+    .expect("instantiates");
     match p.init(&serde_json::json!({ "token": "" })).await {
         Ok(_) => panic!("blank token must fail init"),
         Err(e) => assert_eq!(e, "GitHub token is not configured."),
@@ -55,10 +61,14 @@ async fn blank_token_fails_init_with_exact_message() {
 async fn empty_related_items_succeeds() {
     let dir = tempfile::tempdir().unwrap();
     let eng = moonlit_engine::host::test_engine();
-    let mut p =
-        PluginInstance::instantiate(&eng, FIXTURE, cfg(dir.path(), vec![]), Arc::new(NullSink))
-            .await
-            .expect("instantiates");
+    let mut p = PluginInstance::instantiate(
+        &eng,
+        &fixture(),
+        cfg(dir.path(), vec![]),
+        Arc::new(NullSink),
+    )
+    .await
+    .expect("instantiates");
     p.init(&serde_json::json!({ "token": "dummy" }))
         .await
         .expect("init ok");
@@ -88,7 +98,7 @@ async fn write_variables_appends_to_github_output_file() {
     )];
     let eng = moonlit_engine::host::test_engine();
     let mut p =
-        PluginInstance::instantiate(&eng, FIXTURE, cfg(dir.path(), env), Arc::new(NullSink))
+        PluginInstance::instantiate(&eng, &fixture(), cfg(dir.path(), env), Arc::new(NullSink))
             .await
             .expect("instantiates");
     p.init(&serde_json::json!({ "token": "dummy" }))
