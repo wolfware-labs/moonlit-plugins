@@ -1,6 +1,6 @@
 //! GitLab project path, derived once per run from the `origin` remote and cached.
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 use regex::Regex;
 
 use crate::config::GitlabPluginConfig;
@@ -114,8 +114,8 @@ pub fn resolve_context<T>(ctx: &Context) -> Result<GitlabContext, MiddlewareResu
 mod tests {
     use super::*;
     use crate::config::GitlabPluginConfig;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::MockHost;
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::MockHost;
 
     fn out(text: &str) -> OutputChunk {
         OutputChunk {

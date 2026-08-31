@@ -1,8 +1,8 @@
 //! Shared helpers for the docker middlewares: the `docker` command builder and
 //! the frozen non-zero-exit failure phrasing.
 
-use moonlit_sdk::prelude::*;
-use moonlit_sdk::process::Command;
+use moonlit_pdk::prelude::*;
+use moonlit_pdk::process::Command;
 
 /// A `docker` command rooted at the working dir. The spawn cwd is a HOST path —
 /// the engine passes `cmd.cwd` verbatim to the OS process's `current_dir` — so
@@ -25,7 +25,7 @@ pub fn fail<T>(action: &str, code: i32) -> MiddlewareResult<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::MockHost;
+    use moonlit_pdk::testing::MockHost;
 
     #[test]
     fn docker_sets_program_and_working_dir_cwd() {

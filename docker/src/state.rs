@@ -1,7 +1,7 @@
 //! Plugin-wide shared state (one instance per pipeline run): the buildx builder
 //! name recorded by `setup-buildx` and read by `build-and-push`.
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 /// Shared state for the docker plugin.
 #[derive(Default)]

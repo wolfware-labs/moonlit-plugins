@@ -1,7 +1,7 @@
 //! Provider-agnostic AI refinement of the commit list, before changelog generation.
 //! Batches commits (15/batch, sequential), talks only to the `ChatClient` trait.
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 use crate::ai::{ChatClient, ChatError, ChatRequest};
 use crate::models::ConventionalCommit;
@@ -136,7 +136,7 @@ mod tests {
     use super::*;
     use crate::ai::{ChatError, ChatRequest, ChatResponse};
     use crate::models::ConventionalCommit;
-    use moonlit_sdk::testing::MockHost;
+    use moonlit_pdk::testing::MockHost;
     use std::cell::RefCell;
 
     struct Canned {

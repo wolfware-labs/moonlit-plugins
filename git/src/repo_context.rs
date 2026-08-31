@@ -1,7 +1,7 @@
 //! `git repo-context` — current branch and origin remote URL.
 
 use crate::shared::{ensure_repo, git};
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 /// Output published by `repo-context`: the current branch and origin remote URL.
 #[derive(Serialize, schemars::JsonSchema)]
@@ -50,8 +50,8 @@ impl Middleware for RepoContext {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn out(text: &str) -> OutputChunk {
         OutputChunk {

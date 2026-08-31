@@ -1,7 +1,7 @@
 //! generate-changelog — structured changelog categories, with optional AI filter/refine.
 
-use moonlit_sdk::changelog::Category;
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::changelog::Category;
+use moonlit_pdk::prelude::*;
 
 use crate::changelog::ChangelogGeneratorConfig;
 use crate::models::{ConventionalCommit, SrShared};
@@ -82,22 +82,22 @@ impl Middleware for GenerateChangelog {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::{run, MockHost};
-    use moonlit_sdk::LogLevel;
+    use moonlit_pdk::testing::{run, MockHost};
+    use moonlit_pdk::LogLevel;
     use serde_json::Value;
 
     fn cfg(json: Value) -> GenerateChangelogInput {
-        moonlit_sdk::config::from_json_value(&json.to_string()).unwrap()
+        moonlit_pdk::config::from_json_value(&json.to_string()).unwrap()
     }
     fn sr_cfg(json: Value) -> crate::config::SrPluginConfig {
-        moonlit_sdk::config::from_json_value(&json.to_string()).unwrap()
+        moonlit_pdk::config::from_json_value(&json.to_string()).unwrap()
     }
     fn run_with_config(
         shared: &SrShared,
         host: &MockHost,
         pc: &crate::config::SrPluginConfig,
         c: GenerateChangelogInput,
-    ) -> moonlit_sdk::bindings::MiddlewareResult {
+    ) -> moonlit_pdk::bindings::MiddlewareResult {
         let ctx = Context::new(host, "/w".into(), "s".into())
             .with_state(shared)
             .with_plugin_config(pc);

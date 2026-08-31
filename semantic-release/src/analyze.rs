@@ -1,7 +1,7 @@
 //! `analyze` — parse raw commits into conventional commits, apply scope filters,
 //! store them in shared state, and emit them (1.x `ConvertCommits`).
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 use crate::convert::convert_all;
 use crate::models::{Commit, ConventionalCommit, SrShared};
@@ -81,15 +81,15 @@ fn keep(c: &ConventionalCommit, cfg: &AnalyzeInput) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::testing::{run, MockHost};
     use serde_json::Value;
 
     fn cfg(json: Value) -> AnalyzeInput {
-        moonlit_sdk::config::from_json_value(&json.to_string()).unwrap()
+        moonlit_pdk::config::from_json_value(&json.to_string()).unwrap()
     }
 
     fn outputs(
-        w: moonlit_sdk::bindings::MiddlewareResult,
+        w: moonlit_pdk::bindings::MiddlewareResult,
     ) -> std::collections::HashMap<String, Value> {
         w.output
             .into_iter()

@@ -2,8 +2,8 @@
 
 use crate::dotnet::{dotnet, exit_phrase, prepare_output_dir, project_slug, resolve};
 use crate::version::{assembly_or_file_version, informational_version, package_version};
-use moonlit_sdk::prelude::*;
-use moonlit_sdk::process::LineHandler;
+use moonlit_pdk::prelude::*;
+use moonlit_pdk::process::LineHandler;
 use std::path::{Path, PathBuf};
 
 /// From a prepared output dir (`out_dir`, whose logical relative path is `out_rel`), pick
@@ -189,7 +189,7 @@ impl Middleware for Pack {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn proj_dir() -> tempfile::TempDir {
         let d = tempfile::tempdir().unwrap();

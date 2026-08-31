@@ -1,8 +1,8 @@
 //! Structured changelog generation. Emits `sdk::changelog::Category` values so the
 //! producer shape is byte-identical to what github/gitlab `create-release` consume.
 
-use moonlit_sdk::changelog::{Category, Entry};
-use moonlit_sdk::prelude::Deserialize;
+use moonlit_pdk::changelog::{Category, Entry};
+use moonlit_pdk::prelude::Deserialize;
 
 use crate::models::{ChangelogRule, ConventionalCommit};
 
@@ -213,7 +213,7 @@ mod tests {
     #[test]
     fn omitted_rules_preserve_default_rule_set() {
         let cfg: ChangelogGeneratorConfig =
-            moonlit_sdk::config::from_json_value(&serde_json::json!({}).to_string()).unwrap();
+            moonlit_pdk::config::from_json_value(&serde_json::json!({}).to_string()).unwrap();
         let cats = cfg.generate(&[commit("feat", None, false, "add flag", "abc1234")]);
         let names: Vec<&str> = cats.iter().map(|c| c.name.as_str()).collect();
         assert!(names.contains(&"Features"));
@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn explicit_empty_rules_yield_no_categories() {
         let cfg: ChangelogGeneratorConfig =
-            moonlit_sdk::config::from_json_value(&serde_json::json!({ "rules": [] }).to_string())
+            moonlit_pdk::config::from_json_value(&serde_json::json!({ "rules": [] }).to_string())
                 .unwrap();
         let cats = cfg.generate(&[commit("feat", None, false, "add flag", "abc1234")]);
         assert!(cats.is_empty());

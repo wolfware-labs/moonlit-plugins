@@ -1,7 +1,7 @@
 //! `gitlab create-release` — create a GitLab release, then comment/label related items.
 
-use moonlit_sdk::changelog::{self, Category};
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::changelog::{self, Category};
+use moonlit_pdk::prelude::*;
 use serde_json::{json, Value};
 
 use crate::api;
@@ -220,9 +220,9 @@ fn encode_query(s: &str) -> String {
 mod tests {
     use super::*;
     use crate::context::GitlabShared;
-    use moonlit_sdk::changelog::Entry;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::changelog::Entry;
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn origin() -> OutputChunk {
         OutputChunk {

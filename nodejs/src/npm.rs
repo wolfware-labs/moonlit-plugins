@@ -2,8 +2,8 @@
 //! preopen, package.json pre-flight, lockfile detection, wiped output dirs, the uniform
 //! exit phrase, and the optional `npm version` step shared by `build`/`pack`.
 
-use moonlit_sdk::prelude::*; // Context, MiddlewareResult, LineHandler, Deserialize, …
-use moonlit_sdk::process::Command;
+use moonlit_pdk::prelude::*; // Context, MiddlewareResult, LineHandler, Deserialize, …
+use moonlit_pdk::process::Command;
 use std::path::PathBuf;
 
 /// An `npm` command pre-seeded with `directory` (resolved against the working dir) as cwd.
@@ -100,7 +100,7 @@ pub fn maybe_set_version<T>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::MockHost;
+    use moonlit_pdk::testing::MockHost;
 
     #[test]
     fn npm_builder_sets_program_and_cwd() {

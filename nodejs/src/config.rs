@@ -1,6 +1,6 @@
 //! Plugin-level config: npm registry + auth token (fallbacks for `push`).
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", default)]

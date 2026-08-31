@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -202,8 +202,8 @@ impl Middleware for RelatedItems {
 mod tests {
     use super::*;
     use crate::context::GitlabShared;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn origin() -> OutputChunk {
         OutputChunk {

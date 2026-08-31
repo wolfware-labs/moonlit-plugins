@@ -1767,12 +1767,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "moonlit-pdk"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ddaae75ec7c1062b45bf22ea2cc58f2453eb254e7234b4c2f3ad790d7649962"
+dependencies = [
+ "chrono",
+ "flate2",
+ "moonlit-pdk-macros",
+ "schemars",
+ "serde",
+ "serde_json",
+ "wit-bindgen 0.59.0",
+]
+
+[[package]]
+name = "moonlit-pdk-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5f34aa7c0572713a78a4942eff8a43858cf3bc696a43bcc9c57d708ba8b03d0"
+dependencies = [
+ "base64",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
 name = "moonlit-plugin-docker"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "schemars",
  "serde",
@@ -1787,7 +1814,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "regex",
  "schemars",
@@ -1803,7 +1830,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "regex",
  "schemars",
@@ -1819,7 +1846,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "regex",
  "schemars",
@@ -1835,7 +1862,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "regex",
  "schemars",
@@ -1851,7 +1878,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "schemars",
  "serde",
@@ -1866,7 +1893,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "schemars",
  "serde",
@@ -1883,7 +1910,7 @@ dependencies = [
  "chrono",
  "globset",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "regex",
  "schemars",
@@ -1900,40 +1927,13 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "moonlit-engine",
- "moonlit-sdk",
+ "moonlit-pdk",
  "predicates",
  "schemars",
  "serde",
  "serde_json",
  "tempfile",
  "tokio",
-]
-
-[[package]]
-name = "moonlit-sdk"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a51d22fe9d7d089a5eced71fdf1e929adaef7bf9a3a90daa55e3301b72822128"
-dependencies = [
- "chrono",
- "flate2",
- "moonlit-sdk-macros",
- "schemars",
- "serde",
- "serde_json",
- "wit-bindgen 0.59.0",
-]
-
-[[package]]
-name = "moonlit-sdk-macros"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0e16b152fab1d47e1af2b7eedcd51e3006afe495cf2e64939892e558f787af0"
-dependencies = [
- "base64",
- "proc-macro2",
- "quote",
- "syn 2.0.119",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 //! Provider-agnostic chat abstraction (Microsoft.Extensions.AI-style). The trait
 //! fronts every LLM provider; `Retrying` adds backoff; `build_client` picks the impl.
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 pub mod anthropic;
 pub mod gemini;
@@ -152,8 +152,8 @@ pub fn build_client(cfg: &AiConfig) -> Box<dyn ChatClient> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::config::from_json_value;
-    use moonlit_sdk::testing::MockHost;
+    use moonlit_pdk::config::from_json_value;
+    use moonlit_pdk::testing::MockHost;
     use std::cell::RefCell;
 
     /// Fake client returning a scripted sequence of results, one per call.

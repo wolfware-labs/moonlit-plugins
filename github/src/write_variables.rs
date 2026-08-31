@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
@@ -94,8 +94,8 @@ impl Middleware for WriteVariables {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn cfg_out(pairs: &[(&str, &str)]) -> WriteVariablesInput {
         WriteVariablesInput {

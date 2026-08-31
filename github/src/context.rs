@@ -1,6 +1,6 @@
 //! GitHub owner/repo, derived once per run from the `origin` remote and cached.
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 use regex::Regex;
 
 #[derive(Clone)]
@@ -60,8 +60,8 @@ pub fn resolve_context<T>(ctx: &Context) -> Result<GithubContext, MiddlewareResu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::MockHost;
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::MockHost;
 
     fn out(text: &str) -> OutputChunk {
         OutputChunk {

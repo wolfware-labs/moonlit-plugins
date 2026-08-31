@@ -2,7 +2,7 @@
 
 First-party plugins for [Moonlit](https://github.com/wolfware-labs/moonlit),
 built as `wasm32-wasip2` WebAssembly components on
-[`moonlit-sdk`](https://crates.io/crates/moonlit-sdk).
+[`moonlit-pdk`](https://crates.io/crates/moonlit-pdk).
 
 | Plugin | Purpose |
 | --- | --- |

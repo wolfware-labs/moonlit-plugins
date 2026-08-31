@@ -10,7 +10,7 @@ mod push;
 mod run_script;
 mod test;
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 use build::Build;
 use config::NodeConfig;

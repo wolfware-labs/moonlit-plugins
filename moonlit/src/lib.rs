@@ -1,6 +1,6 @@
 mod run_modules;
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 use run_modules::RunModules;
 

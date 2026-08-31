@@ -2,8 +2,8 @@
 
 use crate::dotnet::{dotnet, exit_phrase, prepare_output_dir, project_slug, resolve};
 use crate::trx::{parse_counters, TrxCounters};
-use moonlit_sdk::prelude::*;
-use moonlit_sdk::process::LineHandler;
+use moonlit_pdk::prelude::*;
+use moonlit_pdk::process::LineHandler;
 
 /// Output published by `test`: the TRX pass/fail/skip/total counts.
 #[derive(Serialize, schemars::JsonSchema)]
@@ -141,7 +141,7 @@ impl Middleware for Test {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn proj_dir() -> tempfile::TempDir {
         let d = tempfile::tempdir().unwrap();

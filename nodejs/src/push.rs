@@ -3,8 +3,8 @@
 
 use crate::config::NodeConfig;
 use crate::npm::{exit_phrase, npm, prepare_output_dir, resolve};
-use moonlit_sdk::prelude::*;
-use moonlit_sdk::process::LineHandler;
+use moonlit_pdk::prelude::*;
+use moonlit_pdk::process::LineHandler;
 use std::path::Path;
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -181,8 +181,8 @@ impl Middleware for Push {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn pkg_dir() -> tempfile::TempDir {
         let d = tempfile::tempdir().unwrap();

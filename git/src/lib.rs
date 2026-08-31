@@ -8,7 +8,7 @@ mod repo_context;
 mod shared;
 mod tag;
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 use commits::Commits;
 use latest_tag::LatestTag;

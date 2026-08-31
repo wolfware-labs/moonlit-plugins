@@ -1,7 +1,7 @@
 //! `git push` — push the current branch and (optionally) tags to a remote.
 
 use crate::shared::{ensure_repo, git};
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
@@ -104,8 +104,8 @@ fn run_push<T>(ctx: &Context, args: &[&str]) -> Result<(), MiddlewareResult<T>> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn out(text: &str) -> OutputChunk {
         OutputChunk {

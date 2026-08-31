@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use globset::Glob;
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 use semver::Version;
 
 use crate::models::{ConventionalCommit, SrShared};
@@ -171,14 +171,14 @@ fn non_empty(v: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::testing::{run, MockHost};
     use serde_json::Value;
 
     fn cfg(json: Value) -> CalculateVersionInput {
-        moonlit_sdk::config::from_json_value(&json.to_string()).unwrap()
+        moonlit_pdk::config::from_json_value(&json.to_string()).unwrap()
     }
     fn outputs(
-        w: moonlit_sdk::bindings::MiddlewareResult,
+        w: moonlit_pdk::bindings::MiddlewareResult,
     ) -> std::collections::HashMap<String, Value> {
         w.output
             .into_iter()
@@ -188,7 +188,7 @@ mod tests {
     fn ctx_run(
         shared: &SrShared,
         c: CalculateVersionInput,
-    ) -> moonlit_sdk::bindings::MiddlewareResult {
+    ) -> moonlit_pdk::bindings::MiddlewareResult {
         let host = MockHost::new();
         let ctx = Context::new(&host, "/w".into(), "s".into()).with_state(shared);
         run(&CalculateVersion, &ctx, c).into_wit()

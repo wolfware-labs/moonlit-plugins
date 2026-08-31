@@ -1,4 +1,4 @@
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 use std::collections::BTreeMap;
 
 #[derive(Deserialize, Default, schemars::JsonSchema)]
@@ -110,8 +110,8 @@ impl Middleware for RunModules {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::process::{OutputChunk, StdioStream};
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::process::{OutputChunk, StdioStream};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn ok_line(text: &str) -> OutputChunk {
         OutputChunk {

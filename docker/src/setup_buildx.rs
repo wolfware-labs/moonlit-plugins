@@ -3,8 +3,8 @@
 
 use crate::docker::{docker, fail};
 use crate::state::DockerShared;
-use moonlit_sdk::prelude::*;
-use moonlit_sdk::process::LineHandler;
+use moonlit_pdk::prelude::*;
+use moonlit_pdk::process::LineHandler;
 
 #[derive(Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", default)]
@@ -89,7 +89,7 @@ impl Middleware for SetupBuildx {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn ctx<'a>(host: &'a MockHost, shared: &'a DockerShared) -> Context<'a> {
         Context::new(host, "/wd".into(), "setup-buildx".into()).with_state(shared)

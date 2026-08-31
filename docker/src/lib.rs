@@ -9,7 +9,7 @@ mod login;
 mod setup_buildx;
 mod state;
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 use build_and_push::BuildAndPush;
 use deploy::Deploy;

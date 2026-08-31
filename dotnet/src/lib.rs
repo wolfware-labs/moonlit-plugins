@@ -10,7 +10,7 @@ mod test;
 mod trx;
 mod version;
 
-use moonlit_sdk::prelude::*;
+use moonlit_pdk::prelude::*;
 
 use build::Build;
 use config::DotnetConfig;

@@ -2,8 +2,8 @@
 //! (`service`) is an explicit unsupported stub for MVP.
 
 use crate::docker::{docker, fail};
-use moonlit_sdk::prelude::*;
-use moonlit_sdk::process::LineHandler;
+use moonlit_pdk::prelude::*;
+use moonlit_pdk::process::LineHandler;
 use std::collections::BTreeMap;
 
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -96,7 +96,7 @@ impl Middleware for Deploy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use moonlit_sdk::testing::{run, MockHost};
+    use moonlit_pdk::testing::{run, MockHost};
 
     fn ctx<'a>(host: &'a MockHost) -> Context<'a> {
         Context::new(host, "/wd".into(), "deploy".into())
