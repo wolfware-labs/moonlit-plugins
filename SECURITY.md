@@ -18,4 +18,5 @@ capability-enforcement bypasses or supply-chain integrity are especially valuabl
 
 ## Supported Versions
 
-Early development; fixes are applied to the latest release.
+Each plugin is versioned independently; fixes land in the next release of the
+affected plugin. Only the latest version of each plugin is supported.

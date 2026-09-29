@@ -14,8 +14,17 @@ built as `wasm32-wasip2` WebAssembly components on
 | `slack` | Notifications |
 | `moonlit` | Run nested Moonlit modules |
 
-Build a plugin: `cargo build --target wasm32-wasip2 --release` (requires
-`rustup target add wasm32-wasip2`).
+Build all plugins: `cargo build --workspace --target wasm32-wasip2 --release`
+(requires `rustup target add wasm32-wasip2`).
+
+## Versions and releases
+
+Every plugin is versioned and released independently. Each release is tagged
+`<plugin>-v<version>` (for example `github-v0.1.0`) and published to the Moonlit
+registry at `oci://registry.moonlit.rs/wolfware/<plugin>:<version>`. Each plugin's
+README has a `## Use` section with the exact `plugins:` entry and the permissions
+it needs. See the [releases](https://github.com/wolfware-labs/moonlit-plugins/releases)
+for the versions available.
 
 ## Testing
 
@@ -32,6 +41,10 @@ MOONLIT_BIN=/path/to/moonlit cargo test --features cli-e2e
 ```
 
 Without `MOONLIT_BIN`, the tests look for `moonlit` on `PATH`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/wolfware-labs/moonlit-plugins/security/advisories/new
+    about: Please report vulnerabilities privately, never in a public issue.
+  - name: Moonlit CLI and engine issues
+    url: https://github.com/wolfware-labs/moonlit/issues
+    about: Problems with the CLI, the engine or the registry belong in the core repository.

@@ -1,0 +1,23 @@
+name: Feature request
+description: A new middleware, input or output for a plugin.
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Plugin
+      options: [docker, dotnet, git, github, gitlab, moonlit, nodejs, semantic-release, slack, new plugin]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do in your pipeline, and what stops you?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The middleware/inputs/outputs you have in mind, and the permissions it would need.
