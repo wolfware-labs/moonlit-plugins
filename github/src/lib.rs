@@ -2,6 +2,7 @@
 //! HTTP capability; one component instance per pipeline run holds `GithubShared`.
 
 mod api;
+mod commit_files;
 mod config;
 mod context;
 mod create_release;
@@ -10,6 +11,7 @@ mod write_variables;
 
 use moonlit_pdk::prelude::*;
 
+use commit_files::CommitFiles;
 use config::GithubPluginConfig;
 use context::GithubShared;
 use create_release::CreateRelease;
@@ -21,5 +23,5 @@ moonlit_plugin! {
     icon: "icon.png",
     config: GithubPluginConfig,
     state: GithubShared,
-    middlewares: [RelatedItems, CreateRelease, WriteVariables],
+    middlewares: [RelatedItems, CreateRelease, WriteVariables, CommitFiles],
 }

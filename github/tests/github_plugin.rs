@@ -124,3 +124,105 @@ async fn write_variables_appends_to_github_output_file() {
         "got: {written}"
     );
 }
+
+/// Real WASI read through the preopen: a present file gets past the read and
+/// only then needs git/network; a missing one fails first.
+#[tokio::test]
+async fn commit_files_reports_missing_file_before_network() {
+    let dir = tempfile::tempdir().unwrap();
+    let eng = moonlit_engine::host::test_engine();
+    let mut p = PluginInstance::instantiate(
+        &eng,
+        &fixture(),
+        cfg(dir.path(), vec![]),
+        Arc::new(NullSink),
+    )
+    .await
+    .expect("instantiates");
+    p.init(&serde_json::json!({ "token": "dummy" }))
+        .await
+        .expect("init ok");
+    let r = p
+        .execute(
+            "commit-files",
+            ctx(dir.path(), "commit"),
+            &serde_json::json!({
+                "branch": "main",
+                "message": "chore(release): x 0.2.0",
+                "files": ["nope.toml"]
+            }),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert!(r
+        .error_message
+        .unwrap()
+        .starts_with("Cannot read nope.toml"));
+}
+
+#[tokio::test]
+async fn commit_files_reads_through_the_sandbox_then_needs_a_remote() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("present.toml"), "x").unwrap();
+    let eng = moonlit_engine::host::test_engine();
+    let mut p = PluginInstance::instantiate(
+        &eng,
+        &fixture(),
+        cfg(dir.path(), vec![]),
+        Arc::new(NullSink),
+    )
+    .await
+    .expect("instantiates");
+    p.init(&serde_json::json!({ "token": "dummy" }))
+        .await
+        .expect("init ok");
+    let r = p
+        .execute(
+            "commit-files",
+            ctx(dir.path(), "commit"),
+            &serde_json::json!({
+                "branch": "main",
+                "message": "chore(release): x 0.2.0",
+                "files": ["present.toml"]
+            }),
+        )
+        .await
+        .unwrap();
+    // The temp dir is not a git repo, so resolving `origin` is what fails.
+    assert!(!r.successful);
+    assert_eq!(
+        r.error_message.as_deref(),
+        Some("Remote 'origin' not found.")
+    );
+}
+
+#[tokio::test]
+async fn create_release_requires_a_name() {
+    let dir = tempfile::tempdir().unwrap();
+    let eng = moonlit_engine::host::test_engine();
+    let mut p = PluginInstance::instantiate(
+        &eng,
+        &fixture(),
+        cfg(dir.path(), vec![]),
+        Arc::new(NullSink),
+    )
+    .await
+    .expect("instantiates");
+    p.init(&serde_json::json!({ "token": "dummy" }))
+        .await
+        .expect("init ok");
+    let r = p
+        .execute(
+            "create-release",
+            ctx(dir.path(), "release"),
+            &serde_json::json!({ "name": " ", "tag": "v1" }),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert_eq!(
+        r.error_message.as_deref(),
+        Some("Release name is required.")
+    );
+}

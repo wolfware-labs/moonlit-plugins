@@ -1848,6 +1848,7 @@ name = "moonlit-plugin-github"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
+ "base64",
  "moonlit-engine",
  "moonlit-pdk",
  "moonlit-plugin-test-support",

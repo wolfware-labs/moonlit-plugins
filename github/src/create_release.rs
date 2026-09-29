@@ -22,6 +22,8 @@ pub struct CreateReleaseInput {
     name: String,
     /// Git tag the release points at. Required.
     tag: String,
+    /// Commit SHA or branch the tag is created at when it does not exist yet. Defaults to the repository's default branch.
+    target_commitish: Option<String>,
     /// Label to add to the related PRs/issues after the release is created.
     label: Option<String>,
     /// Release body markdown. Overrides the changelog-rendered body when set.
@@ -77,13 +79,21 @@ impl Middleware for CreateRelease {
             cfg.body.clone().unwrap_or_default()
         };
 
-        let payload = json!({
+        let mut payload = json!({
             "tag_name": cfg.tag,
             "name": cfg.name,
             "body": body,
             "draft": cfg.draft,
             "prerelease": cfg.prerelease,
         });
+        if let Some(t) = cfg
+            .target_commitish
+            .as_deref()
+            .map(str::trim)
+            .filter(|t| !t.is_empty())
+        {
+            payload["target_commitish"] = json!(t);
+        }
         let resp = match api::post_json(
             ctx,
             &token,
@@ -301,5 +311,32 @@ mod tests {
             cbody["body"],
             ":rocket: **New Release Published!**\n\n:tada: A new version of the project has just been released!\n\n**:bookmark: Link:** [`1.0.0`](https://github.com/o/r/releases/1)"
         );
+    }
+
+    #[test]
+    fn target_commitish_is_sent_only_when_set() {
+        for (target, expected) in [(Some("abc123"), Some("abc123")), (None, None)] {
+            let host = MockHost::new()
+                .with_process_result(0, vec![origin()])
+                .with_http_response(201, br#"{"name":"1.0.0","html_url":"u"}"#);
+            let sh = GithubShared::default();
+            let pc = GithubPluginConfig { token: "t".into() };
+            let ctx = base(&host, &sh, &pc);
+            let cfg = CreateReleaseInput {
+                name: "1.0.0".into(),
+                tag: "git-v1.0.0".into(),
+                body: Some("notes".into()),
+                target_commitish: target.map(str::to_string),
+                ..Default::default()
+            };
+            assert!(run(&CreateRelease, &ctx, cfg).is_success());
+            let body: serde_json::Value =
+                serde_json::from_slice(host.recorded_requests()[0].body.as_deref().unwrap())
+                    .unwrap();
+            assert_eq!(
+                body.get("target_commitish").and_then(|v| v.as_str()),
+                expected
+            );
+        }
     }
 }

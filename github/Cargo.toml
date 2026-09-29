@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.97"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/wolfware-labs/moonlit-plugins"
 publish = false
 description = "Moonlit first-party github plugin."
 
@@ -17,6 +18,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1"
 regex = "1"
+base64 = "0.22"
 
 [dev-dependencies]
 moonlit-plugin-test-support = { path = "../test-support" }

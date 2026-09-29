@@ -3,7 +3,6 @@
 //! Black-box: run `github write-variables` through `moonlit run` via a file:// ref.
 
 use std::fs;
-use std::path::Path;
 
 use assert_cmd::Command;
 use tempfile::tempdir;
@@ -19,11 +18,7 @@ fn moonlit() -> Command {
 }
 
 fn github_wasm_url() -> String {
-    let p = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/github.wasm")
-        .canonicalize()
-        .expect("github.wasm fixture exists");
-    format!("file://{}", p.display())
+    moonlit_plugin_test_support::component_url("github")
 }
 
 #[test]
@@ -68,13 +63,10 @@ fn moonlit_run_drives_github_write_variables() {
 /// Regression: `plugin inspect` must describe a plugin whose config validation
 /// rejects the empty config. It used to `init({})`, so `PluginConfig::validate`
 /// failed with a token error. github requires a token, so it is the guard here.
-const REQUIRED_CONFIG_FIXTURE: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/github.wasm");
-
 #[test]
 fn inspect_succeeds_for_required_config_plugin() {
     moonlit()
-        .args(["plugin", "inspect", REQUIRED_CONFIG_FIXTURE])
+        .args(["plugin", "inspect", &github_wasm_url()])
         .assert()
         .success()
         .stdout(predicates::str::contains("github"))
