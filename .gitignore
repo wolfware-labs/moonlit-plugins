@@ -7,3 +7,6 @@
 # shipping 11 MB of artifacts that silently went stale against the SDK they
 # were built from.
 **/tests/fixtures/*.wasm
+
+# Python bytecode cache.
+__pycache__/

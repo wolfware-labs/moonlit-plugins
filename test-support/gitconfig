@@ -1,0 +1,5 @@
+[user]
+	name = Moonlit Tests
+	email = tests@example.invalid
+[init]
+	defaultBranch = main

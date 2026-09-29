@@ -1,0 +1,6 @@
+# Tests create throwaway git repos. Isolate them from the developer's global and
+# system git config (signing, hooks, aliases), so results match CI. This never
+# changes the config of real repositories.
+[env]
+GIT_CONFIG_GLOBAL = { value = "test-support/gitconfig", relative = true }
+GIT_CONFIG_NOSYSTEM = "1"
