@@ -1,19 +1,31 @@
 # moonlit-plugin-nodejs — Moonlit first-party nodejs plugin
 
 Six middlewares — `install`, `run-script`, `build`, `pack`, `push`, `test` — built to a
-`wasm32-wasip2` component. Shells out to the `npm` CLI (`exec` permission `["npm",
-"node"]`, filesystem = working directory). **Excluded from the workspace** so the engine
-build/CI never needs the wasm target; native unit tests run via
-`cargo test --manifest-path plugins/nodejs/Cargo.toml`.
+`wasm32-wasip2` component. Shells out to the `npm` CLI. See [Use](#use) for the permissions to grant.
 
-## Regenerate the committed artifact
+## Use
 
-    cd plugins/nodejs
-    cargo build --target wasm32-wasip2 --release
-    cp target/wasm32-wasip2/release/nodejs.wasm ../../engine/tests/fixtures/nodejs.wasm
+```yaml
+plugins:
+  - name: nodejs
+    url: "oci://registry.moonlit.rs/wolfware/nodejs:0.1.0"
+    config:
+      token: $(NPM_TOKEN)
+    permissions:
+      exec: ["npm"]
+      filesystem: read-write
+```
+
+`pack` writes a tarball and `push` writes a scoped `.npmrc` (removed afterwards) under the working directory, hence `filesystem: read-write`.
+
+Released independently; see the [releases](https://github.com/wolfware-labs/moonlit-plugins/releases?q=nodejs-v) for versions.
+
+## Build
+
+    cargo build -p moonlit-plugin-nodejs --target wasm32-wasip2 --release
 
 Requires: `rustup target add wasm32-wasip2`. Verify with
-`moonlit plugin inspect ../../engine/tests/fixtures/nodejs.wasm`.
+`moonlit plugin inspect target/wasm32-wasip2/release/nodejs.wasm`.
 
 ## Design notes
 

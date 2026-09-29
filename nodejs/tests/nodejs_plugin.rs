@@ -108,3 +108,55 @@ async fn push_missing_tarball_fails() {
         .unwrap()
         .starts_with("Package tarball not found at path:"));
 }
+
+#[tokio::test]
+async fn install_missing_package_json_fails() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = instance(dir.path(), serde_json::json!({})).await;
+    let r = p
+        .execute(
+            "install",
+            ctx(dir.path(), "install"),
+            &serde_json::json!({}),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("package.json not found in directory:"));
+}
+
+#[tokio::test]
+async fn pack_missing_package_json_fails() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = instance(dir.path(), serde_json::json!({})).await;
+    let r = p
+        .execute("pack", ctx(dir.path(), "pack"), &serde_json::json!({}))
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("package.json not found in directory:"));
+}
+
+#[tokio::test]
+async fn test_missing_package_json_fails() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = instance(dir.path(), serde_json::json!({})).await;
+    let r = p
+        .execute("test", ctx(dir.path(), "test"), &serde_json::json!({}))
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("package.json not found in directory:"));
+}
