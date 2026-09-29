@@ -3,18 +3,26 @@
 Three middlewares — `analyze`, `calculate-version`, `generate-changelog` — built to a
 `wasm32-wasip2` component. Pure-Rust and **offline by default** — no `exec`/`filesystem`
 permissions, and no network access unless you opt into AI-assisted changelog refinement
-(see [AI-assisted changelog refinement](#ai-assisted-changelog-refinement)). **Excluded
-from the workspace** so the engine build/CI never needs the wasm target; native unit tests
-run via `cargo test --manifest-path plugins/semantic-release/Cargo.toml`.
+(see [AI-assisted changelog refinement](#ai-assisted-changelog-refinement)).
 
-## Regenerate the committed artifact
+## Use
 
-    cd plugins/semantic-release
-    moonlit plugin build --release        # or: cargo build --target wasm32-wasip2 --release
-    cp target/wasm32-wasip2/release/semantic_release.wasm ../../engine/tests/fixtures/semantic-release.wasm
+```yaml
+plugins:
+  - name: semantic-release
+    url: "oci://registry.moonlit.rs/wolfware/semantic-release:0.1.0"
+```
+
+No permissions are needed: the plugin works offline on the commits it is given. Only the optional AI changelog refinement needs a `network` grant for the provider's host (see below).
+
+Released independently; see the [releases](https://github.com/wolfware-labs/moonlit-plugins/releases?q=semantic-release-v) for versions.
+
+## Build
+
+    cargo build -p moonlit-plugin-semantic-release --target wasm32-wasip2 --release
 
 Requires: `rustup target add wasm32-wasip2`. Verify with
-`moonlit plugin inspect ../../engine/tests/fixtures/semantic-release.wasm`.
+`moonlit plugin inspect target/wasm32-wasip2/release/semantic_release.wasm`.
 
 ## AI-assisted changelog refinement
 
@@ -60,7 +68,7 @@ OpenAI, `x-api-key` for Anthropic, `x-goog-api-key` for Gemini) — never in a U
 ```yaml
 plugins:
   - name: sr
-    url: oci://registry.moonlitbuild.dev/wolfware/semantic-release:1.0.0
+    url: "oci://registry.moonlit.rs/wolfware/semantic-release:0.1.0"
     config:
       ai:
         provider: anthropic
