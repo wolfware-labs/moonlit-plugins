@@ -1,0 +1,81 @@
+name: "Plugin release"
+
+# Run once per plugin: moonlit run -f .moonlit/plugin-release.yml -a plugin=<name>
+arguments:
+  plugin: ""
+
+plugins:
+  - name: git
+    url: "oci://registry.moonlit.rs/wolfware/git:0.1.0"
+    permissions:
+      exec: ["git"]
+
+  - name: sr
+    url: "oci://registry.moonlit.rs/wolfware/semantic-release:0.1.0"
+
+  - name: gh
+    url: "oci://registry.moonlit.rs/wolfware/github:0.1.0"
+    config:
+      token: $(GITHUB_TOKEN)
+    permissions:
+      network: ["api.github.com"]
+      exec: ["git"]
+      filesystem: read-only
+
+  - name: moonlit
+    url: "oci://registry.moonlit.rs/wolfware/moonlit:0.1.0"
+    permissions:
+      exec: ["moonlit"]
+      filesystem: read-write
+
+stages:
+  release:
+    - name: repo
+      run: git.repo-context
+    - name: tag
+      run: git.latest-tag
+      config:
+        prefix: "$(args:plugin)-v"
+    - name: commits
+      run: git.commits
+    - name: conventionalCommits
+      run: sr.analyze
+      haltIf: output.conventionalCommits.commitCount == 0
+      config:
+        commits: $(output:commits:details)
+        includeScopes:
+          - $(args:plugin)
+        includeUnscoped: false
+    - name: version
+      run: sr.calculate-version
+      haltIf: "!output.version.hasNewVersion"
+      config:
+        branch: $(output:repo:branch)
+        baseVersion: $(output:tag:name)
+        initialVersion: "0.1.0"
+    - name: changelog
+      run: sr.generate-changelog
+      config:
+        commits: $(output:conventionalCommits:commits)
+    - name: publish
+      run: moonlit.publish-plugin
+      config:
+        manifestPath: $(args:plugin)
+        version: $(output:version:nextVersion)
+        reference: "oci://registry.moonlit.rs/wolfware/$(args:plugin)"
+    - name: commit
+      run: gh.commit-files
+      config:
+        branch: $(output:repo:branch)
+        message: "chore(release): $(args:plugin) $(output:version:nextVersion)"
+        files:
+          - $(args:plugin)/Cargo.toml
+          - Cargo.lock
+    - name: release
+      run: gh.create-release
+      config:
+        name: "$(args:plugin) $(output:version:nextVersion)"
+        tag: "$(args:plugin)-v$(output:version:nextVersion)"
+        targetCommitish: $(output:commit:sha)
+        changelog: $(output:changelog:categories)
+        prerelease: $(output:version:isPrerelease)

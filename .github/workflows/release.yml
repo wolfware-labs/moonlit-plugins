@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: release ${{ matrix.plugin }}
+    # Off until the 0.1.0 bootstrap in RELEASING.md is done. Release commits are
+    # deliberately NOT skipped: every run rescans all plugins from the latest main,
+    # so whichever pending run survives the concurrency replacement covers every
+    # commit. Do not re-add a `chore(release):` guard: a skipped release-commit run
+    # can replace a user push's pending run and that commit would go unreleased.
+    # There is no loop: `chore` never bumps a version, and a just-released plugin
+    # has no scoped commits after its new tag.
+    # Credentials live in the `release` environment, whose deployment branches are
+    # restricted to main; the ref check also keeps dispatches from other branches out.
+    if: vars.RELEASE_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    environment: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      # One at a time: each job commits to main, and the next must start from that commit.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        plugin: [docker, dotnet, git, github, gitlab, moonlit, nodejs, semantic-release, slack]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install the pinned toolchain (rust-toolchain.toml)
+        run: rustup show
+      - uses: wolfware-labs/setup-moonlit@d3860af1f83ba7e5e8700973782f906ff83bb980 # v1.1.0
+        with:
+          # Exact CLI pin: bump it deliberately, after validating the pipeline
+          # against the new version. 3.0.0 runs pipelines from the manifest's
+          # directory (`.moonlit/`), which breaks this pipeline's repo-relative paths.
+          version: '2.0.0'
+          # A privileged workflow must not restore caches.
+          cache: 'false'
+      - name: Log in to the Moonlit registry
+        env:
+          MOONLIT_TOKEN: ${{ secrets.MOONLIT_TOKEN }}
+        run: moonlit login registry.moonlit.rs --token "$MOONLIT_TOKEN"
+      - name: Mint the release App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+      - name: Release ${{ matrix.plugin }}
+        env:
+          # Moonlit reads only MOONLIT_-prefixed variables (prefix stripped), so
+          # this is what `$(GITHUB_TOKEN)` in the pipeline resolves to.
+          MOONLIT_GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+          PLUGIN: ${{ matrix.plugin }}
+        run: moonlit run -f .moonlit/plugin-release.yml -a "plugin=$PLUGIN"
