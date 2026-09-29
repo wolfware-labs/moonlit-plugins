@@ -105,3 +105,28 @@ async fn write_variables_appends_dotenv_file() {
     assert!(written.contains("VERSION=1.2.3\n"), "got: {written}");
     assert!(written.contains("NOTES=a\\nb\n"), "got: {written}");
 }
+
+#[tokio::test]
+async fn create_release_requires_a_name() {
+    let dir = tempfile::tempdir().unwrap();
+    let eng = moonlit_engine::host::test_engine();
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), cfg(dir.path()), Arc::new(NullSink))
+        .await
+        .expect("instantiates");
+    p.init(&serde_json::json!({ "token": "dummy" }))
+        .await
+        .expect("init ok");
+    let r = p
+        .execute(
+            "create-release",
+            ctx(dir.path(), "release"),
+            &serde_json::json!({ "name": " ", "tag": "v1" }),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert_eq!(
+        r.error_message.as_deref(),
+        Some("Release name is required.")
+    );
+}

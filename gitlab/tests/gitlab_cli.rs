@@ -3,7 +3,6 @@
 //! Black-box: run `gitlab write-variables` through `moonlit run` via a file:// ref.
 
 use std::fs;
-use std::path::Path;
 
 use assert_cmd::Command;
 use tempfile::tempdir;
@@ -19,11 +18,7 @@ fn moonlit() -> Command {
 }
 
 fn gitlab_wasm_url() -> String {
-    let p = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/gitlab.wasm")
-        .canonicalize()
-        .expect("gitlab.wasm fixture exists");
-    format!("file://{}", p.display())
+    moonlit_plugin_test_support::component_url("gitlab")
 }
 
 #[test]
