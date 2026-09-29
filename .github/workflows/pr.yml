@@ -1,0 +1,28 @@
+name: PR guard
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-guard:
+    name: pr-guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Guard self-test
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+      - name: Title, scope and DCO
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: python3 .github/scripts/pr_guard.py --title="$PR_TITLE" --base "$BASE_SHA" --head "$HEAD_SHA" --pr-author="$PR_AUTHOR"
