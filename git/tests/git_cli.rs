@@ -19,11 +19,7 @@ fn moonlit() -> Command {
 }
 
 fn git_wasm_url() -> String {
-    let p = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/git.wasm")
-        .canonicalize()
-        .expect("git.wasm fixture exists");
-    format!("file://{}", p.display())
+    moonlit_plugin_test_support::component_url("git")
 }
 
 fn git(dir: &Path, args: &[&str]) {
