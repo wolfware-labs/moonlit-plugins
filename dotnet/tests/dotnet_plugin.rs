@@ -113,3 +113,41 @@ async fn push_missing_key_fails() {
         Some("NuGet API key is not specified in both global and local configuration.")
     );
 }
+
+#[tokio::test]
+async fn pack_missing_project_fails() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = instance(dir.path(), serde_json::json!({})).await;
+    let r = p
+        .execute(
+            "pack",
+            ctx(dir.path(), "pack"),
+            &serde_json::json!({ "project": "missing.csproj", "version": "1.0.0" }),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert_eq!(
+        r.error_message.as_deref(),
+        Some("Project file not found at path: missing.csproj")
+    );
+}
+
+#[tokio::test]
+async fn test_missing_project_fails() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = instance(dir.path(), serde_json::json!({})).await;
+    let r = p
+        .execute(
+            "test",
+            ctx(dir.path(), "test"),
+            &serde_json::json!({ "project": "missing.csproj" }),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert_eq!(
+        r.error_message.as_deref(),
+        Some("Project file not found at path: missing.csproj")
+    );
+}

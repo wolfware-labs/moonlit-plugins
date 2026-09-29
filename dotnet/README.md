@@ -2,18 +2,31 @@
 
 Four middlewares — `build`, `pack`, `push`, `test` — built to a `wasm32-wasip2`
 component. Shells out to the `dotnet` CLI (`exec` permission `["dotnet"]`, filesystem =
-working directory). **Excluded from the workspace** so the engine build/CI never needs
-the wasm target; native unit tests run via
-`cargo test --manifest-path plugins/dotnet/Cargo.toml`.
+working directory).
 
-## Regenerate the committed artifact
+## Use
 
-    cd plugins/dotnet
-    cargo build --target wasm32-wasip2 --release
-    cp target/wasm32-wasip2/release/dotnet.wasm ../../engine/tests/fixtures/dotnet.wasm
+```yaml
+plugins:
+  - name: dotnet
+    url: "oci://registry.moonlit.rs/wolfware/dotnet:0.1.0"
+    config:
+      nugetApiKey: $(NUGET_API_KEY)
+    permissions:
+      exec: ["dotnet"]
+      filesystem: read-write
+```
+
+`pack` and `test` write into a `.moonlit/` directory under the working directory, hence `filesystem: read-write`.
+
+Released independently; see the [releases](https://github.com/wolfware-labs/moonlit-plugins/releases?q=dotnet-v) for versions.
+
+## Build
+
+    cargo build -p moonlit-plugin-dotnet --target wasm32-wasip2 --release
 
 Requires: `rustup target add wasm32-wasip2`. Verify with
-`moonlit plugin inspect ../../engine/tests/fixtures/dotnet.wasm`.
+`moonlit plugin inspect target/wasm32-wasip2/release/dotnet.wasm`.
 
 ## Design notes
 
