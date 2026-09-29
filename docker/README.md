@@ -2,18 +2,31 @@
 
 Four middlewares — `login`, `setup-buildx`, `build-and-push`, `deploy` — built to a
 `wasm32-wasip2` component. Shells out to the `docker` CLI (`exec` permission
-`["docker"]`, filesystem = working directory). One component instance per pipeline run
+`["docker"]`). One component instance per pipeline run
 holds `DockerShared` (the buildx builder name recorded by `setup-buildx` and read by
 `build-and-push`).
 
-## Regenerate the committed artifact
+## Use
 
-    cd plugins/docker
-    cargo build --target wasm32-wasip2 --release
-    cp target/wasm32-wasip2/release/docker.wasm ../../engine/tests/fixtures/docker.wasm
+```yaml
+plugins:
+  - name: docker
+    url: "oci://registry.moonlit.rs/wolfware/docker:0.1.0"
+    permissions:
+      exec: ["docker"]
+      env: ["MOONLIT_DOCKER_BUILDX_BUILDER"]
+```
+
+`env` is needed only for the `MOONLIT_DOCKER_BUILDX_BUILDER` fallback used by `build-and-push`.
+
+Released independently; see the [releases](https://github.com/wolfware-labs/moonlit-plugins/releases?q=docker-v) for versions.
+
+## Build
+
+    cargo build -p moonlit-plugin-docker --target wasm32-wasip2 --release
 
 Requires: `rustup target add wasm32-wasip2`. Verify with
-`moonlit plugin inspect ../../engine/tests/fixtures/docker.wasm`.
+`moonlit plugin inspect target/wasm32-wasip2/release/docker.wasm`.
 
 ## Design notes
 

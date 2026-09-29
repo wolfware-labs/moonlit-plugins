@@ -82,3 +82,56 @@ async fn deploy_service_is_swarm_unsupported() {
         Some("Swarm deploys are not supported yet.")
     );
 }
+
+// docker is denied by the exec allow-list here, so the spawn fails deterministically
+// whether or not a docker binary exists on the machine.
+async fn denied_exec_instance(dir: &std::path::Path) -> PluginInstance {
+    let eng = moonlit_engine::host::test_engine();
+    let mut c = cfg(dir);
+    c.permissions.exec = vec![];
+    let mut p = PluginInstance::instantiate(&eng, &fixture(), c, Arc::new(NullSink))
+        .await
+        .expect("instantiates");
+    p.init(&serde_json::json!({})).await.expect("init ok");
+    p
+}
+
+#[tokio::test]
+async fn setup_buildx_fails_when_docker_cannot_spawn() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = denied_exec_instance(dir.path()).await;
+    let r = p
+        .execute(
+            "setup-buildx",
+            ctx(dir.path(), "buildx"),
+            &serde_json::json!({ "name": "b" }),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("Failed to create buildx builder:"));
+}
+
+#[tokio::test]
+async fn build_and_push_fails_when_docker_cannot_spawn() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut p = denied_exec_instance(dir.path()).await;
+    let r = p
+        .execute(
+            "build-and-push",
+            ctx(dir.path(), "build"),
+            &serde_json::json!({ "tags": ["img:1"] }),
+        )
+        .await
+        .unwrap();
+    assert!(!r.successful);
+    assert!(r
+        .error_message
+        .as_deref()
+        .unwrap()
+        .starts_with("Failed to build and push image:"));
+}
