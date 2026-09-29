@@ -3,6 +3,22 @@
 First-party Moonlit plugin. Posts messages to Slack via the Web API
 (`chat.postMessage`) over the host HTTP capability.
 
+## Use
+
+```yaml
+plugins:
+  - name: slack
+    url: "oci://registry.moonlit.rs/wolfware/slack:0.1.0"
+    config:
+      token: $(SLACK_TOKEN)
+    permissions:
+      network: ["slack.com"]
+```
+
+The plugin calls the Slack Web API.
+
+Released independently; see the [releases](https://github.com/wolfware-labs/moonlit-plugins/releases?q=slack-v) for versions.
+
 ## Config
 
 Plugin-level: `token` (required) — a Slack bot/user OAuth token. Missing or
@@ -18,14 +34,12 @@ blank fails at init with `Slack API token is required.`
 
 `network: ["slack.com"]`
 
-## Regenerate the committed artifact
+## Build
 
-    cd plugins/slack
-    cargo build --target wasm32-wasip2 --release
-    cp target/wasm32-wasip2/release/slack.wasm ../../engine/tests/fixtures/slack.wasm
+    cargo build -p moonlit-plugin-slack --target wasm32-wasip2 --release
 
 Requires: `rustup target add wasm32-wasip2`. Verify with
-`moonlit plugin inspect ../../engine/tests/fixtures/slack.wasm`.
+`moonlit plugin inspect target/wasm32-wasip2/release/slack.wasm`.
 
 ## Design notes
 
